@@ -5,8 +5,8 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "tractor"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.summary = "Very simple object mapping for ruby objects"
+    gem.description = "Very simple object mappings for ruby objects"
     gem.email = "shanewolf@gmail.com"
     gem.homepage = "http://github.com/gizm0duck/tractor"
     gem.authors = ["Shane Wolf"]
