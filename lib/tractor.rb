@@ -1,0 +1,1 @@
+require "tractor/model/base"
