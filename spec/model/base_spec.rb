@@ -1,17 +1,22 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 describe Tractor::Model::Base do
+  attr_reader :redis
   before do
     class Game < Tractor::Model::Base
+      attribute :id
       attribute :board
       attribute :flying_object, :beanbag
       attribute :score, [:points, :integer]
     end
     
     class Player < Tractor::Model::Base
+      attribute :id
       attribute :name
       attribute :wins_loses, :record
     end
+    
+    @redis = Redis.new :db => 11
   end
   
   describe ".attribute" do
@@ -63,16 +68,30 @@ describe Tractor::Model::Base do
     it "has a default attribute of id"
   
     it "returns all attributes that have been added to this class" do
-      sorted_attributes.size.should == 3
-      sorted_attributes.should == [:board, :flying_object, :score]
+      sorted_attributes.size.should == 4
+      sorted_attributes.should == [:board, :flying_object, :id, :score]
     end
     
     it "allows different attributes to be specified for different child classes" do
-      Game.attributes.size.should == 3
-      Player.attributes.size.should == 2
+      Game.attributes.size.should == 4
+      Player.attributes.size.should == 3
       
       Game.attributes.keys.should_not include(:name)
       Player.attributes.keys.should_not include(:flying_object)
+    end
+  end
+  
+  describe "#save" do
+    it "should write attributes to redis" do
+      monkey = MonkeyClient.new
+      monkey.id = 'a1a'
+      monkey.evil = true
+      monkey.birthday = "Dec 3"
+      monkey.save
+      
+      redis["MonkeyClient:a1a:id"].should == "a1a"
+      redis["MonkeyClient:a1a:evil"].should == "true"
+      redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
     end
   end
 end

@@ -1,6 +1,10 @@
 module Tractor
   module Model
     class Base
+      attr_reader :redis
+      def redis
+        @redis ||= Redis.new :db => 11
+      end
       
       def initialize(attributes={})
         @attribute_store = {}
@@ -10,7 +14,11 @@ module Tractor
       end
       
       def save
-        # write to redis (magic)
+        scoped_attreibutes = attribute_store.inject({}) do |h, (key, value)| 
+          h["#{self.class}:#{self.id}:#{key}"] = value
+          h
+        end
+        redis.mset scoped_attreibutes
       end
       
       class << self
