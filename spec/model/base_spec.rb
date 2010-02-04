@@ -58,6 +58,42 @@ describe Tractor::Model::Base do
     end
   end
   
+  describe "#set" do
+    attr_reader :monkey, :banana
+    
+    before do
+      @monkey = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      @banana = BananaClient.new({ :id => 'b1b', :name => "delicious" })
+      
+      monkey.save
+      banana.save
+    end
+    
+    it "adds a set with the given name to the instance" do # "Monkey:a1a:SET_NAME"
+      MonkeyClient.sets.keys.should include(:bananas)
+    end
+    
+    it "adds a push method for the set on an instance of the class" do
+      monkey.bananas.push banana
+      redis.smembers('MonkeyClient:a1a:bananas').should == ['b1b']
+    end
+    
+    it "adds an all method for the set to return the items in it" do
+      monkey.bananas.all.should == []
+      monkey.bananas.push banana
+      banana_from_monkey = monkey.bananas.all[0]
+      
+      banana_from_monkey.name.should == banana.name
+      banana_from_monkey.id.should == banana.id
+    end
+  end
+  
+  describe ".sets" do
+    it "returns all sets that have been added to this class" do
+      MonkeyClient.sets.keys.should == [:bananas]
+    end
+  end
+  
   describe ".attributes" do
     attr_reader :sorted_attributes
     
@@ -145,6 +181,8 @@ describe Tractor::Model::Base do
       redis["MonkeyClient:a1a:evil"].should == "true"
       redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
     end
+    
+    it "returns the instance that has been created"
   end
   
   describe "#find" do

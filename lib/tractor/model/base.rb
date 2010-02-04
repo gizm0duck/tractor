@@ -1,17 +1,39 @@
 module Tractor
+  
+  class << self
+    attr_reader :redis
+  end
+  
+  def self.redis
+    @redis ||= Redis.new :db => 11
+  end
+  
+  class Set
+    include Enumerable
+    
+    attr_accessor :key, :klass
+
+    def initialize(key, klass)
+      self.klass = klass
+      self.key = key
+    end
+    
+    def push(val)
+      Tractor.redis.sadd key, val.id
+    end
+    
+    def all
+      ids = Tractor.redis.smembers(key)
+      ids.inject([]){ |a, id| a << klass.find(id); a }
+    end
+    
+  end
+  
   module Model
     class Base
-      
-      class << self
-        attr_reader :redis
-      end
-      
-      def self.redis
-        @redis ||= Redis.new :db => 11
-      end
-      
       def initialize(attributes={})
         @attribute_store = {}
+        @set_store = {}
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -24,8 +46,8 @@ module Tractor
           h["#{self.class}:#{self.id}:#{key}"] = value
           h
         end
-        Base.redis.mset scoped_attributes
-        Base.redis.sadd "#{self.class}:all", self.id
+        Tractor.redis.mset scoped_attributes
+        Tractor.redis.sadd "#{self.class}:all", self.id
       end
       
       def self.create(attributes={})
@@ -34,7 +56,7 @@ module Tractor
       end
       
       def self.find(id)
-        scoped_attributes = redis.mapped_mget(*redis.keys("#{self}:#{id}:*"))
+        scoped_attributes = Tractor.redis.mapped_mget(*Tractor.redis.keys("#{self}:#{id}:*"))
         unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
           h[key.split(":").last] = value
           h
@@ -43,7 +65,7 @@ module Tractor
       end
       
       class << self
-        attr_reader :attributes
+        attr_reader :attributes, :sets
         
         def attribute(name, options=[])
           attributes[name] = Array(options).empty? ? name : options
@@ -52,8 +74,16 @@ module Tractor
           getter(name, mapping, type)
         end
         
+        def set(name, klass)
+          sets[name] = name
+          
+          define_method(name) do
+            @set_store[name] = Set.new("#{self.class}:#{self.id}:#{name}", klass)
+          end
+        end
+        
         def all
-          ids = Base.redis.smembers("#{self}:all")
+          ids = Tractor.redis.smembers("#{self}:all")
           ids.inject([]){ |a, id| a <<find(id); a }
         end
         
@@ -61,7 +91,7 @@ module Tractor
         # Minions
         ###
         
-        def setter(name, mapping, type)
+        def getter(name, mapping, type)
           define_method(name) do
             value = @attribute_store[name]
             if type == :integer
@@ -74,7 +104,7 @@ module Tractor
           end
         end
         
-        def getter(name, mapping, type)
+        def setter(name, mapping, type)
           define_method(:"#{name}=") do |value|
             if type == :boolean
               value = value.to_s
@@ -86,11 +116,15 @@ module Tractor
         def attributes
           @attributes ||= {}
         end
+        
+        def sets
+          @sets ||= {}
+        end
       end
       
       private 
       
-      attr_reader :attribute_store
+      attr_reader :attribute_store, :set_store
     end
   end
 end

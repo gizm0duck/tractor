@@ -7,18 +7,19 @@ require 'spec/autorun'
 require 'redis'
 
 Spec::Runner.configure do |config|
-  config.before(:each) { Tractor::Model::Base.redis.flushdb }
+  config.before(:each) { Tractor.redis.flushdb }
+end
+
+class BananaClient < Tractor::Model::Base
+  attribute :id
+  attribute :name
 end
 
 class MonkeyClient < Tractor::Model::Base
   attribute :id
   attribute :birthday
   attribute :evil, [:evil_monkey, :boolean]
-end
-
-class BananaClient < Tractor::Model::Base
-  attribute :id
-  attribute :name
+  set :bananas, BananaClient
 end
 
 class Monkey
