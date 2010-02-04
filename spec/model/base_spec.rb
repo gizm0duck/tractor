@@ -59,11 +59,12 @@ describe Tractor::Model::Base do
   end
   
   describe "#set" do
-    attr_reader :monkey, :banana
+    attr_reader :monkey, :banana, :banana2
     
     before do
-      @monkey = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
-      @banana = BananaClient.new({ :id => 'b1b', :name => "delicious" })
+      @monkey   = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      @banana   = BananaClient.new({ :id => 'b1b', :name => "delicious" })
+      @banana2  = BananaClient.new({ :id => 'b2b', :name => "gross" })
       
       monkey.save
       banana.save
@@ -79,13 +80,20 @@ describe Tractor::Model::Base do
     end
     
     it "adds an all method for the set to return the items in it" do
+      banana2.save
       monkey.bananas.all.should == []
       monkey.bananas.push banana
-      banana_from_monkey = monkey.bananas.all[0]
+      monkey.bananas.push banana2
+      banana_from_monkey  = monkey.bananas.all[0]
+      banana2_from_monkey = monkey.bananas.all[1]
       
       banana_from_monkey.name.should == banana.name
       banana_from_monkey.id.should == banana.id
+      banana2_from_monkey.name.should == banana2.name
+      banana2_from_monkey.id.should == banana2.id
     end
+    
+    it "requires the object being added to have been saved to the database before adding it to the set"
   end
   
   describe ".sets" do
