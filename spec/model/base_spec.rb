@@ -103,14 +103,38 @@ describe Tractor::Model::Base do
     end
     
     it "appends the new object to the MonkeyClient set" do
+      MonkeyClient.all.size.should == 0
       monkey = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
       monkey.save
       
-      MonkeyClient.all.should include('a1a')
+      MonkeyClient.all.size.should == 1
     end
   end
   
-  describe ".all"
+  describe ".all" do
+    it "every object that is created for this class will be in this set" do
+      MonkeyClient.all.size.should == 0
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      MonkeyClient.create({ :id => 'b1b', :evil => false, :birthday => "Dec 4" })
+      MonkeyClient.all.size.should == 2
+    end
+    
+    it "each class only tracks their own" do
+      MonkeyClient.all.size.should == 0
+      BananaClient.all.size.should == 0
+      
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      BananaClient.create({ :id => 'a1a', :name => "delicious" })
+      
+      MonkeyClient.all.size.should == 1
+      BananaClient.all.size.should == 1
+    end
+    
+    it "returns the entire instance of a given object" do
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      MonkeyClient.all[0].birthday.should == "Dec 3"
+    end
+  end
   
   describe "#create" do
     it "fails if the id exists"

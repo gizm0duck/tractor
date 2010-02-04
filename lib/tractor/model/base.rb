@@ -53,7 +53,8 @@ module Tractor
         end
         
         def all
-          Base.redis.smembers("#{self}:all")
+          ids = Base.redis.smembers("#{self}:all")
+          ids.inject([]){ |a, id| a <<find(id); a }
         end
         
         ###
