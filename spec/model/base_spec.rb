@@ -82,6 +82,14 @@ describe Tractor::Model::Base do
   end
   
   describe "#save" do
+    it "raises if id is nil or empty" do
+      monkey = MonkeyClient.new
+      monkey.id = nil
+      lambda { monkey.save }.should raise_error("Probably wanna set an id")
+      monkey.id = ''
+      lambda { monkey.save }.should raise_error("Probably wanna set an id")
+    end
+    
     it "should write attributes to redis" do
       monkey = MonkeyClient.new
       monkey.id = 'a1a'
@@ -92,6 +100,35 @@ describe Tractor::Model::Base do
       redis["MonkeyClient:a1a:id"].should == "a1a"
       redis["MonkeyClient:a1a:evil"].should == "true"
       redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
+    end
+    
+    it "appends the new object to the MonkeyClient set" do
+      monkey = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      monkey.save
+      
+      MonkeyClient.all.should include('a1a')
+    end
+  end
+  
+  describe ".all"
+  
+  describe "#create" do
+    it "fails if the id exists"
+    it "should write attributes to redis" do
+      monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      
+      redis["MonkeyClient:a1a:id"].should == "a1a"
+      redis["MonkeyClient:a1a:evil"].should == "true"
+      redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
+    end
+  end
+  
+  describe "#find" do
+    it "takes an id and returns the object from redis" do
+      monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      
+      redis_monkey = MonkeyClient.find('a1a')
+      redis_monkey.birthday.should == "Dec 3"
     end
   end
 end
