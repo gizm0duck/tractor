@@ -67,7 +67,10 @@ module Tractor
       end
       
       def self.find_by_id(id)
-        scoped_attributes = Tractor.redis.mapped_mget(*Tractor.redis.keys("#{self}:#{id}:*"))
+        keys = Tractor.redis.keys("#{self}:#{id}:*")
+        return nil if keys.empty?
+        
+        scoped_attributes = Tractor.redis.mapped_mget(*keys)
         unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
           h[key.split(":").last] = value
           h

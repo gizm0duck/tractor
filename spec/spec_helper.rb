@@ -10,12 +10,19 @@ Spec::Runner.configure do |config|
   config.before(:each) { Tractor.redis.flushdb }
 end
 
-class BananaClient < Tractor::Model::Base
+class BananaClient < Tractor::Model::Mapper
   attribute :id
   attribute :name
 end
 
-class MonkeyClient < Tractor::Model::Base
+class Banana
+  attr_accessor :id, :type
+  def initialize(id, type)
+    @id = id; @type = type;
+  end
+end
+
+class MonkeyClient < Tractor::Model::Mapper
   attribute :id
   attribute :birthday
   attribute :evil, :type => :boolean #[:evil_monkey, :boolean]
@@ -34,3 +41,21 @@ class Monkey
   end
 end
 
+class SlugClient < Tractor::Model::Mapper
+  attribute :id
+  attribute :banana_id
+  
+  depends_on BananaClient, :key_name => :banana_id, :method_name => :banana
+end
+
+class Slug
+  attr_accessor :id, :banana_id
+  
+  def initialize(id, banana_id)
+    @id = id; @banana_id = banana_id
+  end
+  
+  def banana
+    Banana.new("1", "yellow")
+  end
+end

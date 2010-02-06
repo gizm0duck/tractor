@@ -250,6 +250,8 @@ describe Tractor::Model::Base do
       redis_monkey = MonkeyClient.find_by_id('a1a')
       redis_monkey.birthday.should == "Dec 3"
     end
+    
+    it "returns nil if the keys do not exist in redis"
   end
   
   describe ".find" do
