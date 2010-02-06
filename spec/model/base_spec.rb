@@ -6,14 +6,14 @@ describe Tractor::Model::Base do
     class Game < Tractor::Model::Base
       attribute :id
       attribute :board
-      attribute :flying_object, :beanbag
-      attribute :score, [:points, :integer]
+      attribute :flying_object #, :beanbag
+      attribute :score, :type => :integer #[:points, :integer]
     end
     
     class Player < Tractor::Model::Base
       attribute :id
       attribute :name
-      attribute :wins_loses, :record
+      attribute :wins_loses #, :record
     end
     
     @redis = Redis.new :db => 11
@@ -24,16 +24,8 @@ describe Tractor::Model::Base do
       Game.attributes.should include(:board)
     end
     
-    it "allows you to specify the mapping for the tractor representation to another object" do
-      Game.attributes[:flying_object].should == :beanbag
-    end
-    
-    it "defaults the mapping to the attribute name if none is given" do
-      Game.attributes[:board].should == :board
-    end
-    
     it "allows you to specify what type the value should be when it comes out of the tractor" do
-      Game.attributes[:score].should == [:points, :integer]
+      Game.attributes[:score][:type].should == :integer
     end
     
     it "creates a set method for each attribute" do

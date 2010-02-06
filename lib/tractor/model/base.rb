@@ -101,11 +101,11 @@ module Tractor
       class << self
         attr_reader :attributes, :associations, :indices
         
-        def attribute(name, options=[])
-          attributes[name] = Array(options).empty? ? name : options
-          mapping, type = options
-          setter(name, mapping, type)
-          getter(name, mapping, type)
+        def attribute(name, options={})
+          options[:map] = name unless options[:map]
+          attributes[name] = options
+          setter(name, options[:type])
+          getter(name, options[:type])
         end
         
         def index(name)
@@ -129,7 +129,7 @@ module Tractor
         # Minions
         ###
         
-        def getter(name, mapping, type)
+        def getter(name, type)
           define_method(name) do
             value = @attribute_store[name]
             if type == :integer
@@ -142,7 +142,7 @@ module Tractor
           end
         end
         
-        def setter(name, mapping, type)
+        def setter(name, type)
           define_method(:"#{name}=") do |value|
             if type == :boolean
               value = value.to_s
