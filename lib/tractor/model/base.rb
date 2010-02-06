@@ -77,7 +77,10 @@ module Tractor
       
       def self.find(name, value)
         encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
-        ids = Tractor.redis.smembers("#{self}:#{name}:#{encoded_value}")
+        key = "#{self}:#{name}:#{encoded_value}"
+        raise "No index on '#{name}'" unless Tractor.redis.exists(key)
+        
+        ids = Tractor.redis.smembers(key)
         ids.map do |id|
           find_by_id(id)
         end

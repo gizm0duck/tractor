@@ -266,12 +266,15 @@ describe Tractor::Model::Base do
         attribute :id
         attribute :product
         attribute :weight
-        index :product
         index :weight
       end
     end
     
-    it "raises if index does not exist for given key"
+    it "raises if index does not exist for given key" do
+      lambda do
+        JohnDeere.find(:product, "harvestor")
+      end.should raise_error("No index on 'product'")
+    end
     
     it "takes an index name and value and finds all matching objects" do
       harvester = JohnDeere.new({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
@@ -288,5 +291,7 @@ describe Tractor::Model::Base do
       redis_sprayer.weight.should == sprayer.weight
       redis_sprayer.product.should == sprayer.product
     end
+    
+    it "returns empty array if nothing matches"
   end
 end
