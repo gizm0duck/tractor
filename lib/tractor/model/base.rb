@@ -55,7 +55,7 @@ module Tractor
       
       def update_indices
         self.class.indices.each do |name|
-          encoded_value = "#{Base64.encode64(self.send(name))}".gsub("\n", "")
+          encoded_value = "#{Base64.encode64(self.send(name).to_s)}".gsub("\n", "")
           Tractor.redis.sadd "#{self.class}:#{name}:#{encoded_value}", self.id
         end
       end
@@ -76,7 +76,7 @@ module Tractor
       end
       
       def self.find(name, value)
-        encoded_value = "#{Base64.encode64(value)}".gsub("\n", "")
+        encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
         ids = Tractor.redis.smembers("#{self}:#{name}:#{encoded_value}")
         ids.map do |id|
           find_by_id(id)

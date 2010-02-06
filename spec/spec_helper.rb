@@ -19,6 +19,7 @@ class MonkeyClient < Tractor::Model::Base
   attribute :id
   attribute :birthday
   attribute :evil, [:evil_monkey, :boolean]
+  index :evil
   
   association :bananas, BananaClient
 end
