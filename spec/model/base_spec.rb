@@ -42,7 +42,6 @@ describe Tractor::Model::Base do
       game.send(:attribute_store)[:board].should == "fancy"
     end
     
-    
     it "creates a get method for each attribute" do
       game = Game.new
       game.board = "schmancy"
@@ -100,6 +99,43 @@ describe Tractor::Model::Base do
     it "returns all association that have been added to this class" do
       MonkeyClient.associations.keys.should == [:bananas]
     end
+  end
+  
+  describe ".indices" do
+    before do
+      class JohnDeere < Tractor::Model::Base
+        attribute :id
+        attribute :product
+        attribute :weight
+        index :product
+        index :weight
+      end
+    end
+    
+    it "returns all indices on a class" do
+      JohnDeere.indices.should == [:product, :weight]
+    end
+  end
+  
+  describe "index" do
+    before do
+      class JohnDeere < Tractor::Model::Base
+        attribute :id
+        attribute :product
+        attribute :weight
+        index :product
+        index :weight
+      end
+    end
+    
+    it "has an index on id by default"
+    
+    it "removes newline characters from index key"
+  end
+  
+  describe "ids_for_index" do
+    it "returns all matching ids for the index name"
+    it "takes data type into considerationg (int, boolean)"
   end
   
   describe ".attributes" do
@@ -181,6 +217,16 @@ describe Tractor::Model::Base do
   end
   
   describe "#create" do
+    before do
+      class JohnDeere < Tractor::Model::Base
+        attribute :id
+        attribute :product
+        attribute :weight
+        index :product
+        index :weight
+      end
+    end
+    
     it "fails if the id exists"
     it "should write attributes to redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
@@ -190,15 +236,54 @@ describe Tractor::Model::Base do
       redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
     end
     
+    it "populates all the indices that are specified on the class" do
+      JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
+
+      redis.smembers("JohnDeere:product:aGFydmVzdGVy").should include('a1a')
+      redis.smembers("JohnDeere:product:c2VlZGVy").should include('b2b')
+      redis.smembers("JohnDeere:weight:aGVhdnk=").should == ['a1a', 'b2b']
+    end
+    
     it "returns the instance that has been created"
   end
   
-  describe "#find" do
+  describe ".find" do
     it "takes an id and returns the object from redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
       
       redis_monkey = MonkeyClient.find('a1a')
       redis_monkey.birthday.should == "Dec 3"
+    end
+  end
+  
+  describe ".find_by_index" do
+    before do
+      class JohnDeere < Tractor::Model::Base
+        attribute :id
+        attribute :product
+        attribute :weight
+        index :product
+        index :weight
+      end
+    end
+    
+    it "raises if index does not exist for given key"
+    
+    it "takes an index name and value and finds all matching objects" do
+      harvester = JohnDeere.new({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      sprayer = JohnDeere.new({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
+      harvester.save
+      sprayer.save
+
+      redis_harvester, redis_sprayer = JohnDeere.find_by_index(:weight, "heavy")
+      redis_harvester.id.should == harvester.id
+      redis_harvester.weight.should == harvester.weight
+      redis_harvester.product.should == harvester.product
+      
+      redis_sprayer.id.should == sprayer.id
+      redis_sprayer.weight.should == sprayer.weight
+      redis_sprayer.product.should == sprayer.product
     end
   end
 end

@@ -1,3 +1,5 @@
+require 'base64'
+
 module Tractor
   
   class << self
@@ -48,6 +50,14 @@ module Tractor
         end
         Tractor.redis.mset scoped_attributes
         Tractor.redis.sadd "#{self.class}:all", self.id
+        update_indices
+      end
+      
+      def update_indices
+        self.class.indices.each do |name|
+          encoded_value = "#{Base64.encode64(self.send(name))}".gsub("\n", "")
+          Tractor.redis.sadd "#{self.class}:#{name}:#{encoded_value}", self.id
+        end
       end
       
       def self.create(attributes={})
@@ -64,14 +74,26 @@ module Tractor
         self.new(unscoped_attributes)
       end
       
+      def self.find_by_index(name, value)
+        encoded_value = "#{Base64.encode64(value)}".gsub("\n", "")
+        ids = Tractor.redis.smembers("#{self}:#{name}:#{encoded_value}")
+        ids.map do |id|
+          find(id)
+        end
+      end
+      
       class << self
-        attr_reader :attributes, :associations
+        attr_reader :attributes, :associations, :indices
         
         def attribute(name, options=[])
           attributes[name] = Array(options).empty? ? name : options
           mapping, type = options
           setter(name, mapping, type)
           getter(name, mapping, type)
+        end
+        
+        def index(name)
+          indices << name
         end
         
         def association(name, klass)
@@ -119,6 +141,10 @@ module Tractor
         
         def associations
           @associations ||= {}
+        end
+        
+        def indices
+          @indices ||= []
         end
       end
       
