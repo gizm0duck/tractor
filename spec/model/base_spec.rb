@@ -245,19 +245,22 @@ describe Tractor::Model::Base do
       redis.smembers("JohnDeere:weight:aGVhdnk=").should == ['a1a', 'b2b']
     end
     
-    it "returns the instance that has been created"
+    it "returns the instance that has been created" do
+      harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      harvester.weight.should == "heavy"
+    end
   end
   
-  describe ".find" do
+  describe ".find_by_id" do
     it "takes an id and returns the object from redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
       
-      redis_monkey = MonkeyClient.find('a1a')
+      redis_monkey = MonkeyClient.find_by_id('a1a')
       redis_monkey.birthday.should == "Dec 3"
     end
   end
   
-  describe ".find_by_index" do
+  describe ".find" do
     before do
       class JohnDeere < Tractor::Model::Base
         attribute :id
@@ -276,7 +279,7 @@ describe Tractor::Model::Base do
       harvester.save
       sprayer.save
 
-      redis_harvester, redis_sprayer = JohnDeere.find_by_index(:weight, "heavy")
+      redis_harvester, redis_sprayer = JohnDeere.find(:weight, "heavy")
       redis_harvester.id.should == harvester.id
       redis_harvester.weight.should == harvester.weight
       redis_harvester.product.should == harvester.product

@@ -26,7 +26,7 @@ module Tractor
     
     def all
       ids = Tractor.redis.smembers(key)
-      ids.inject([]){ |a, id| a << klass.find(id); a }
+      ids.inject([]){ |a, id| a << klass.find_by_id(id); a }
     end
     
   end
@@ -63,9 +63,10 @@ module Tractor
       def self.create(attributes={})
         m = new(attributes)
         m.save
+        m
       end
       
-      def self.find(id)
+      def self.find_by_id(id)
         scoped_attributes = Tractor.redis.mapped_mget(*Tractor.redis.keys("#{self}:#{id}:*"))
         unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
           h[key.split(":").last] = value
@@ -74,11 +75,11 @@ module Tractor
         self.new(unscoped_attributes)
       end
       
-      def self.find_by_index(name, value)
+      def self.find(name, value)
         encoded_value = "#{Base64.encode64(value)}".gsub("\n", "")
         ids = Tractor.redis.smembers("#{self}:#{name}:#{encoded_value}")
         ids.map do |id|
-          find(id)
+          find_by_id(id)
         end
       end
       
@@ -106,7 +107,7 @@ module Tractor
         
         def all
           ids = Tractor.redis.smembers("#{self}:all")
-          ids.inject([]){ |a, id| a << find(id); a }
+          ids.inject([]){ |a, id| a << find_by_id(id); a }
         end
         
         ###
