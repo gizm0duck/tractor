@@ -6,11 +6,9 @@ module Tractor
         
         def depends_on(klass, options = {})
           dependencies[klass] = options
+          
+          # set index by default on items that have a depends on
           #set_redis_index(klass, options[:key_name])
-        end
-
-        def dependencies
-          @dependencies ||= {}
         end
         
         def representation_for(server_instance)
@@ -22,7 +20,7 @@ module Tractor
         end
         
         def find_from_instance(server_instance)
-          self.find({ :server_id => server_instance.id }).first
+          self.find_by_id(server_instance.id)
         end
         
         def create_from_instance(server_instance)
@@ -41,9 +39,9 @@ module Tractor
         end
         
         def remove(server_id)
-          obj_to_delete = self.find({ :server_id => server_id }).first
-          return false if obj_to_delete.nil?
-          obj_to_delete.delete
+          obj_to_destroy = self.find_by_id(server_id)
+          return false if obj_to_destroy.nil?
+          obj_to_destroy.destroy
         end
         
         def hydrate_attributes(server_instance)
@@ -75,7 +73,7 @@ module Tractor
         def ensure_dependencies_met(server_instance)
           return if dependencies_met?(server_instance)
           dependencies.each do |klass, options|
-            if klass.find({ :server_id => server_instance.send(options[:key_name]) }).empty?
+            if klass.find_by_id(server_instance.send(options[:key_name]))
               server_instances = server_instance.send(options[:method_name])
               server_instances = server_instances.is_a?(Array) ? server_instances : [server_instances]
               server_instances.each do |obj|
@@ -85,6 +83,9 @@ module Tractor
           end
         end
         
+        def dependencies
+          @dependencies ||= {}
+        end
       end
     end
   end

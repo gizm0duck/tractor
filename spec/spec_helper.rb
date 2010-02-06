@@ -24,8 +24,8 @@ end
 
 class MonkeyClient < Tractor::Model::Mapper
   attribute :id
-  attribute :birthday
-  attribute :evil, :type => :boolean #[:evil_monkey, :boolean]
+  attribute :birthday, :map => :birthdate
+  attribute :evil, :type => :boolean, :map => :evil_monkey #[:evil_monkey, :boolean]
   index :evil
   
   association :bananas, BananaClient

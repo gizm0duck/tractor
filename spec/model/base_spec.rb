@@ -254,6 +254,14 @@ describe Tractor::Model::Base do
     it "returns nil if the keys do not exist in redis"
   end
   
+  describe "#update" do
+    it "should be specced"
+  end
+  
+  describe "#destroy" do
+    it "should be specced"
+  end
+  
   describe ".find" do
     attr_reader :harvester, :seeder
     before do

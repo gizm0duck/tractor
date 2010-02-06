@@ -53,6 +53,14 @@ module Tractor
         update_indices
       end
       
+      def destroy
+        
+      end
+      
+      def update(attributes = {})
+        
+      end
+      
       def update_indices
         self.class.indices.each do |name|
           encoded_value = "#{Base64.encode64(self.send(name).to_s)}".gsub("\n", "")

@@ -52,6 +52,132 @@ describe Tractor::Model::Mapper do
     end
   end
   
+  describe "find_from_instance" do
+    it "returns nil if record does not exist in redis" do
+      monkey_1 = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      monkey_client_1 = MonkeyClient.find_from_instance(monkey_1)
+      monkey_client_1.should be_nil
+    end
+    
+    it "returns the object from redis if it exists" do      
+      monkey_1 = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      monkey_2 = Monkey.new("Dec. 4, 1981", false, 'b1b')
+      
+      MonkeyClient.create_from_instance(monkey_1)
+      MonkeyClient.create_from_instance(monkey_2)
+      MonkeyClient.all.size.should == 2
+      
+      redis_monkey_1 = MonkeyClient.find_from_instance(monkey_1)
+      redis_monkey_2 = MonkeyClient.find_from_instance(monkey_2)
+      
+      redis_monkey_1.birthday.should == "Dec. 3, 1981"
+      redis_monkey_2.birthday.should == "Dec. 4, 1981"
+      
+      redis_monkey_1.evil.should == true
+      redis_monkey_2.evil.should == false
+    end
+  end
+  
+  describe "create_from_instance" do
+    it "ensures dependencies are met"
+    it "writes the client representation out to redis with proper object types" do
+      monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      redis_monkey = MonkeyClient.create_from_instance(monkey)
+      
+      redis_monkey = MonkeyClient.all.first
+      redis_monkey.birthday.should == "Dec. 3, 1981"
+      redis_monkey.evil.should == true
+      redis_monkey.id.should == "a1a"
+    end
+  end
+  
+  describe "update_from_instance" do
+    it "ensures dependencies are met"
+    it "finds an existing record based on id and updates the attributes accordingly" do
+      monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      redis_monkey = MonkeyClient.create_from_instance(monkey)
+      
+      MonkeyClient.all.size.should == 1
+      redis_monkey = MonkeyClient.all.first
+      redis_id = redis_monkey.id
+      redis_monkey.id.should == monkey.id
+      
+      monkey.birthdate = "Dec. 2, 1981"
+      monkey.evil_monkey = false
+      
+      MonkeyClient.update_from_instance(monkey)
+      MonkeyClient.all.size.should == 1
+      redis_monkey = MonkeyClient[redis_id]
+      
+      redis_monkey.birthday.should == "Dec. 2, 1981"
+      redis_monkey.evil.should == false
+    end
+    
+    it "raises if record does not exist" do
+      MonkeyClient.all.should be_empty
+      monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      
+      lambda do 
+        redis_monkey = MonkeyClient.update_from_instance(monkey)
+      end.should raise_error("Cannot update an object that doesn't exist.")
+    end
+  end
+  
+  describe ".remove" do
+    it "removes the client representation with the given id" do
+      monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      redis_monkey = MonkeyClient.create_from_instance(monkey)
+      
+      MonkeyClient.find_from_instance(monkey).should_not be_nil
+      MonkeyClient.remove(monkey.id)
+      MonkeyClient.find_from_instance(monkey).should be_nil
+    end
+    
+    it "returns false if the client representation with the given id does not exist" do
+      monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+      
+      MonkeyClient.remove(monkey.id).should be_false
+      MonkeyClient.find_from_instance(monkey).should be_nil
+    end
+  end
+  
+  describe ".representation_for" do
+    attr_reader :monkey
+    
+    before do
+      @monkey = Monkey.new("Dec. 3, 1981", true, 'aabc1')
+    end
+    
+    context "when the object does NOT exist in the cache" do
+      before do
+        MonkeyClient.all.should be_empty
+      end
+      
+      it "inserts the object and returns it" do
+        monkey_client = MonkeyClient.representation_for(monkey)
+        monkey_client.class.should == MonkeyClient
+        monkey_client.birthday.should == "Dec. 3, 1981"
+        monkey_client.evil.should == true
+      end
+    end
+    
+    context "when the object exists in the cache" do
+      before do
+        monkey_client = MonkeyClient.create_from_instance(monkey)
+        MonkeyClient.find_by_id(monkey.id).should_not be_nil
+        monkey_client.birthday.should == monkey.birthdate
+        MonkeyClient.all.size.should == 1
+      end
+      
+      it "updates the values and returns the object" do
+        monkey.birthdate = "Nov. 27, 1942"
+        monkey_client = MonkeyClient.representation_for(monkey)
+        monkey_client.birthday.should == "Nov. 27, 1942"
+        MonkeyClient.all.size.should == 1
+      end
+    end
+  end
+  
   describe "dependencies" do
     it "returns a list of all the dependencies for this class" do
       dependencies = SlugClient.dependencies
