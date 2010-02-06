@@ -90,7 +90,7 @@ module Tractor
       def self.find_by_attribute(name, value)
         encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
         key = "#{self}:#{name}:#{encoded_value}"
-        raise "No index on '#{name}'" unless Tractor.redis.exists(key)
+        raise "No index on '#{name}'" unless indices.include?(name)
         
         ids = Tractor.redis.smembers(key)
         ids.map do |id|
@@ -99,6 +99,7 @@ module Tractor
       end
       
       def self.find(options = {})
+        return [] if options.empty?
         sets = options.map do |name, value|
           encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
           "#{self}:#{name}:#{encoded_value}"
@@ -120,7 +121,7 @@ module Tractor
         end
         
         def index(name)
-          indices << name
+          indices << name unless indices.include?(name)
         end
         
         def association(name, klass)

@@ -16,6 +16,15 @@ describe Tractor::Model::Base do
       attribute :wins_loses #, :record
     end
     
+    class JohnDeere < Tractor::Model::Base
+      attribute :id
+      attribute :product
+      attribute :weight
+      attribute :price
+      index :product
+      index :weight
+    end
+    
     @redis = Redis.new :db => 11
   end
   
@@ -94,32 +103,12 @@ describe Tractor::Model::Base do
   end
   
   describe ".indices" do
-    before do
-      class JohnDeere < Tractor::Model::Base
-        attribute :id
-        attribute :product
-        attribute :weight
-        index :product
-        index :weight
-      end
-    end
-    
     it "returns all indices on a class" do
       JohnDeere.indices.should == [:product, :weight]
     end
   end
   
   describe "index" do
-    before do
-      class JohnDeere < Tractor::Model::Base
-        attribute :id
-        attribute :product
-        attribute :weight
-        index :product
-        index :weight
-      end
-    end
-    
     it "has an index on id by default"
     
     it "removes newline characters from index key"
@@ -209,16 +198,6 @@ describe Tractor::Model::Base do
   end
   
   describe "#create" do
-    before do
-      class JohnDeere < Tractor::Model::Base
-        attribute :id
-        attribute :product
-        attribute :weight
-        index :product
-        index :weight
-      end
-    end
-    
     it "fails if the id exists"
     it "should write attributes to redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
@@ -231,7 +210,7 @@ describe Tractor::Model::Base do
     it "populates all the indices that are specified on the class" do
       JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
       JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
-
+  
       redis.smembers("JohnDeere:product:aGFydmVzdGVy").should include('a1a')
       redis.smembers("JohnDeere:product:c2VlZGVy").should include('b2b')
       redis.smembers("JohnDeere:weight:aGVhdnk=").should == ['a1a', 'b2b']
@@ -251,7 +230,9 @@ describe Tractor::Model::Base do
       redis_monkey.birthday.should == "Dec 3"
     end
     
-    it "returns nil if the keys do not exist in redis"
+    it "returns nil if the keys do not exist in redis" do
+      MonkeyClient.find_by_id('a1a').should be_nil
+    end
   end
   
   describe "#update" do
@@ -265,13 +246,6 @@ describe Tractor::Model::Base do
   describe ".find" do
     attr_reader :harvester, :seeder
     before do
-      class JohnDeere < Tractor::Model::Base
-        attribute :id
-        attribute :product
-        attribute :weight
-        index :weight
-      end
-      
       @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
       @seeder = JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
     end
@@ -296,24 +270,20 @@ describe Tractor::Model::Base do
       end
     end
     
-    it "returns empty array if no options are given"
-    it "returns empty array if nothing matches the given options"
+    it "returns empty array if no options are given" do
+      JohnDeere.find({}).should == []
+    end
+    
+    it "returns empty array if nothing matches the given options" do
+      JohnDeere.find( {:weight => "light" } ).should == []
+    end
   end
   
   describe ".find_by_attribute" do
-    before do
-      class JohnDeere < Tractor::Model::Base
-        attribute :id
-        attribute :product
-        attribute :weight
-        index :weight
-      end
-    end
-    
     it "raises if index does not exist for given key" do
       lambda do
-        JohnDeere.find_by_attribute(:product, "harvestor")
-      end.should raise_error("No index on 'product'")
+        JohnDeere.find_by_attribute(:price, "$$$$")
+      end.should raise_error("No index on 'price'")
     end
     
     it "takes an index name and value and finds all matching objects" do
@@ -321,7 +291,7 @@ describe Tractor::Model::Base do
       seeder = JohnDeere.new({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
       harvester.save
       seeder.save
-
+    
       redis_harvester, redis_seeder = JohnDeere.find_by_attribute(:weight, "heavy")
       redis_harvester.id.should == harvester.id
       redis_harvester.weight.should == harvester.weight
@@ -332,6 +302,8 @@ describe Tractor::Model::Base do
       redis_seeder.product.should == seeder.product
     end
     
-    it "returns empty array if nothing matches"
+    it "returns nil if nothing matches" do
+      JohnDeere.find_by_attribute(:weight, "heavy").should == []
+    end
   end
 end
