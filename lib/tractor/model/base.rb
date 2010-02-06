@@ -75,12 +75,24 @@ module Tractor
         self.new(unscoped_attributes)
       end
       
-      def self.find(name, value)
+      # use method missing to do craziness, or define a find_by on each index (BETTER)
+      def self.find_by_attribute(name, value)
         encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
         key = "#{self}:#{name}:#{encoded_value}"
         raise "No index on '#{name}'" unless Tractor.redis.exists(key)
         
         ids = Tractor.redis.smembers(key)
+        ids.map do |id|
+          find_by_id(id)
+        end
+      end
+      
+      def self.find(options = {})
+        sets = options.map do |name, value|
+          encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
+          "#{self}:#{name}:#{encoded_value}"
+        end
+        ids = Tractor.redis.sinter(*sets)
         ids.map do |id|
           find_by_id(id)
         end

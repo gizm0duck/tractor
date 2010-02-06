@@ -261,6 +261,44 @@ describe Tractor::Model::Base do
   end
   
   describe ".find" do
+    attr_reader :harvester, :seeder
+    before do
+      class JohnDeere < Tractor::Model::Base
+        attribute :id
+        attribute :product
+        attribute :weight
+        index :weight
+      end
+      
+      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      @seeder = JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
+    end
+    
+    context "when searching on 1 attribute" do
+      it "returns all matching products" do
+        redis_harvester, redis_seeder = JohnDeere.find( {:weight => "heavy" } )
+        
+        redis_harvester.id.should == harvester.id
+        redis_harvester.product.should == harvester.product
+        redis_seeder.id.should == seeder.id
+        redis_seeder.product.should == seeder.product
+      end
+    end
+    
+    context "when searching on multiple attribute" do
+      it "returns the intersection of all matching objects" do
+        products = JohnDeere.find( {:weight => "heavy", :product => "seeder" } )
+        products.size.should == 1
+        products[0].id.should == "b2b"
+        products[0].product.should == "seeder"
+      end
+    end
+    
+    it "returns empty array if no options are given"
+    it "returns empty array if nothing matches the given options"
+  end
+  
+  describe ".find_by_attribute" do
     before do
       class JohnDeere < Tractor::Model::Base
         attribute :id
@@ -272,24 +310,24 @@ describe Tractor::Model::Base do
     
     it "raises if index does not exist for given key" do
       lambda do
-        JohnDeere.find(:product, "harvestor")
+        JohnDeere.find_by_attribute(:product, "harvestor")
       end.should raise_error("No index on 'product'")
     end
     
     it "takes an index name and value and finds all matching objects" do
       harvester = JohnDeere.new({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      sprayer = JohnDeere.new({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
+      seeder = JohnDeere.new({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
       harvester.save
-      sprayer.save
+      seeder.save
 
-      redis_harvester, redis_sprayer = JohnDeere.find(:weight, "heavy")
+      redis_harvester, redis_seeder = JohnDeere.find_by_attribute(:weight, "heavy")
       redis_harvester.id.should == harvester.id
       redis_harvester.weight.should == harvester.weight
       redis_harvester.product.should == harvester.product
       
-      redis_sprayer.id.should == sprayer.id
-      redis_sprayer.weight.should == sprayer.weight
-      redis_sprayer.product.should == sprayer.product
+      redis_seeder.id.should == seeder.id
+      redis_seeder.weight.should == seeder.weight
+      redis_seeder.product.should == seeder.product
     end
     
     it "returns empty array if nothing matches"
