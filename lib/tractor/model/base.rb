@@ -44,6 +44,11 @@ module Tractor
       Tractor.redis.sadd(key, id)
     end
     
+    def self.key_for(klass, name, value)
+      i = self.new(klass, name, value)
+      i.key
+    end
+    
     def key
       encoded_value = "#{Base64.encode64(value.to_s)}".gsub("\n", "")
       "#{klass}:#{name}:#{encoded_value}"
@@ -84,7 +89,6 @@ module Tractor
       
       def update_indices
         self.class.indices.each do |name|
-          require "ruby-debug"
           index = Index.new(self.class, name, send(name))
           index.insert(self.id)
         end
@@ -116,8 +120,7 @@ module Tractor
       def self.find_by_attribute(name, value)
         raise "No index on '#{name}'" unless indices.include?(name)
         
-        index = Index.new(self, name, value)
-        ids = Tractor.redis.smembers(index.key)
+        ids = Tractor.redis.smembers(Index.key_for(self, name, value))
         ids.map do |id|
           find_by_id(id)
         end
@@ -126,8 +129,7 @@ module Tractor
       def self.find(options = {})
         return [] if options.empty?
         sets = options.map do |name, value|
-          index = Index.new(self, name, value)
-          index.key
+          Index.key_for(self, name, value)
         end
         ids = Tractor.redis.sinter(*sets)
         ids.map do |id|
