@@ -28,7 +28,26 @@ module Tractor
       ids = Tractor.redis.smembers(key)
       ids.inject([]){ |a, id| a << klass.find_by_id(id); a }
     end
+  end
+  
+  class Index
+    include Enumerable
+    attr_reader :klass, :name, :value
     
+    def initialize(klass, name, value)
+      @klass = klass
+      @name = name
+      @value = value
+    end
+    
+    def insert(id)
+      Tractor.redis.sadd(key, id)
+    end
+    
+    def key
+      encoded_value = "#{Base64.encode64(value.to_s)}".gsub("\n", "")
+      "#{klass}:#{name}:#{encoded_value}"
+    end
   end
   
   module Model
@@ -65,8 +84,9 @@ module Tractor
       
       def update_indices
         self.class.indices.each do |name|
-          encoded_value = "#{Base64.encode64(self.send(name).to_s)}".gsub("\n", "")
-          Tractor.redis.sadd "#{self.class}:#{name}:#{encoded_value}", self.id
+          require "ruby-debug"
+          index = Index.new(self.class, name, send(name))
+          index.insert(self.id)
         end
       end
       
@@ -94,11 +114,10 @@ module Tractor
       
       # use method missing to do craziness, or define a find_by on each index (BETTER)
       def self.find_by_attribute(name, value)
-        encoded_value = "#{Base64.encode64(value.to_s)}".gsub("\n", "")
-        key = "#{self}:#{name}:#{encoded_value}"
         raise "No index on '#{name}'" unless indices.include?(name)
         
-        ids = Tractor.redis.smembers(key)
+        index = Index.new(self, name, value)
+        ids = Tractor.redis.smembers(index.key)
         ids.map do |id|
           find_by_id(id)
         end
@@ -107,8 +126,8 @@ module Tractor
       def self.find(options = {})
         return [] if options.empty?
         sets = options.map do |name, value|
-          encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
-          "#{self}:#{name}:#{encoded_value}"
+          index = Index.new(self, name, value)
+          index.key
         end
         ids = Tractor.redis.sinter(*sets)
         ids.map do |id|
