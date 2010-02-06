@@ -19,7 +19,8 @@ class MonkeyClient < Tractor::Model::Base
   attribute :id
   attribute :birthday
   attribute :evil, [:evil_monkey, :boolean]
-  set :bananas, BananaClient
+  
+  association :bananas, BananaClient
 end
 
 class Monkey

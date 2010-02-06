@@ -33,7 +33,7 @@ module Tractor
     class Base
       def initialize(attributes={})
         @attribute_store = {}
-        @set_store = {}
+        @association_store = {}
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -65,7 +65,7 @@ module Tractor
       end
       
       class << self
-        attr_reader :attributes, :sets
+        attr_reader :attributes, :associations
         
         def attribute(name, options=[])
           attributes[name] = Array(options).empty? ? name : options
@@ -74,17 +74,17 @@ module Tractor
           getter(name, mapping, type)
         end
         
-        def set(name, klass)
-          sets[name] = name
+        def association(name, klass)
+          associations[name] = name
           
           define_method(name) do
-            @set_store[name] = Set.new("#{self.class}:#{self.id}:#{name}", klass)
+            @association_store[name] = Set.new("#{self.class}:#{self.id}:#{name}", klass)
           end
         end
         
         def all
           ids = Tractor.redis.smembers("#{self}:all")
-          ids.inject([]){ |a, id| a <<find(id); a }
+          ids.inject([]){ |a, id| a << find(id); a }
         end
         
         ###
@@ -117,14 +117,14 @@ module Tractor
           @attributes ||= {}
         end
         
-        def sets
-          @sets ||= {}
+        def associations
+          @associations ||= {}
         end
       end
       
       private 
       
-      attr_reader :attribute_store, :set_store
+      attr_reader :attribute_store, :association_store
     end
   end
 end

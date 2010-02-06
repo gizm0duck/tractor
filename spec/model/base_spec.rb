@@ -58,7 +58,7 @@ describe Tractor::Model::Base do
     end
   end
   
-  describe "#set" do
+  describe "#association" do
     attr_reader :monkey, :banana, :banana2
     
     before do
@@ -71,7 +71,7 @@ describe Tractor::Model::Base do
     end
     
     it "adds a set with the given name to the instance" do # "Monkey:a1a:SET_NAME"
-      MonkeyClient.sets.keys.should include(:bananas)
+      MonkeyClient.associations.keys.should include(:bananas)
     end
     
     it "adds a push method for the set on an instance of the class" do
@@ -79,7 +79,7 @@ describe Tractor::Model::Base do
       redis.smembers('MonkeyClient:a1a:bananas').should == ['b1b']
     end
     
-    it "adds an all method for the set to return the items in it" do
+    it "adds an all method for the association to return the items in it" do
       banana2.save
       monkey.bananas.all.should == []
       monkey.bananas.push banana
@@ -96,9 +96,9 @@ describe Tractor::Model::Base do
     it "requires the object being added to have been saved to the database before adding it to the set"
   end
   
-  describe ".sets" do
-    it "returns all sets that have been added to this class" do
-      MonkeyClient.sets.keys.should == [:bananas]
+  describe ".associations" do
+    it "returns all association that have been added to this class" do
+      MonkeyClient.associations.keys.should == [:bananas]
     end
   end
   
