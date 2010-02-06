@@ -43,9 +43,11 @@ module Tractor
       
       def save
         raise "Probably wanna set an id" if self.id.nil? || self.id.empty?
+        key_base = "#{self.class}:#{self.id}"
+        raise "Duplicate value for #{self.class} 'id'" if Tractor.redis.keys("#{key_base}:*").any?
         
-        scoped_attributes = attribute_store.inject({}) do |h, (key, value)| 
-          h["#{self.class}:#{self.id}:#{key}"] = value
+        scoped_attributes = attribute_store.inject({}) do |h, (attr_name, value)| 
+          h["#{key_base}:#{attr_name}"] = value
           h
         end
         Tractor.redis.mset scoped_attributes
@@ -68,6 +70,10 @@ module Tractor
         end
       end
       
+      def to_h
+        attribute_store
+      end
+      
       def self.create(attributes={})
         m = new(attributes)
         m.save
@@ -88,7 +94,7 @@ module Tractor
       
       # use method missing to do craziness, or define a find_by on each index (BETTER)
       def self.find_by_attribute(name, value)
-        encoded_value = "#{Base64.encode64(value).to_s}".gsub("\n", "")
+        encoded_value = "#{Base64.encode64(value.to_s)}".gsub("\n", "")
         key = "#{self}:#{name}:#{encoded_value}"
         raise "No index on '#{name}'" unless indices.include?(name)
         

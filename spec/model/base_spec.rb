@@ -6,21 +6,21 @@ describe Tractor::Model::Base do
     class Game < Tractor::Model::Base
       attribute :id
       attribute :board
-      attribute :flying_object #, :beanbag
-      attribute :score, :type => :integer #[:points, :integer]
+      attribute :flying_object
+      attribute :score, :type => :integer
     end
     
     class Player < Tractor::Model::Base
       attribute :id
       attribute :name
-      attribute :wins_loses #, :record
+      attribute :wins_loses
     end
     
     class JohnDeere < Tractor::Model::Base
       attribute :id
       attribute :product
       attribute :weight
-      attribute :price
+      attribute :expensive, :type => :boolean
       index :product
       index :weight
     end
@@ -38,23 +38,29 @@ describe Tractor::Model::Base do
     end
     
     it "creates a set method for each attribute" do
-      game = Game.new
-      game.board = "fancy"
+      game = Game.new(:board => "fancy")
       game.send(:attribute_store)[:board].should == "fancy"
     end
     
     it "creates a get method for each attribute" do
-      game = Game.new
-      game.board = "schmancy"
+      game = Game.new(:board => "schmancy")
       game.board.should == "schmancy"
     end
     
     describe "when attribute is a boolean" do
-      
+      it "returns a boolean" do
+        tractor = JohnDeere.new(:expensive => true)
+        tractor.expensive.should == true
+        tractor.expensive.should be_a(TrueClass)
+      end
     end
     
     describe "when attribute is a integer" do
-      
+      it "returns an integer" do
+        game = Game.new(:score => 1222)
+        game.score.should == 1222
+        game.score.should be_a(Fixnum)
+      end
     end
   end
   
@@ -109,24 +115,15 @@ describe Tractor::Model::Base do
   end
   
   describe "index" do
-    it "has an index on id by default"
-    
     it "removes newline characters from index key"
   end
-  
-  describe "ids_for_index" do
-    it "returns all matching ids for the index name"
-    it "takes data type into considerationg (int, boolean)"
-  end
-  
+    
   describe ".attributes" do
     attr_reader :sorted_attributes
     
     before do
       @sorted_attributes = Game.attributes.keys.sort{|x,y| x.to_s <=> y.to_s}  
     end
-    
-    it "has a default attribute of id"
   
     it "returns all attributes that have been added to this class" do
       sorted_attributes.size.should == 4
@@ -198,7 +195,14 @@ describe Tractor::Model::Base do
   end
   
   describe "#create" do
-    it "fails if the id exists"
+    it "allows you to specify which attributes should be unique"
+    it "raises exception if the id exists" do
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      lambda do
+        MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
+      end.should raise_error("Duplicate value for MonkeyClient 'id'")
+    end
+    
     it "should write attributes to redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
       
@@ -282,8 +286,8 @@ describe Tractor::Model::Base do
   describe ".find_by_attribute" do
     it "raises if index does not exist for given key" do
       lambda do
-        JohnDeere.find_by_attribute(:price, "$$$$")
-      end.should raise_error("No index on 'price'")
+        JohnDeere.find_by_attribute(:expensive, true)
+      end.should raise_error("No index on 'expensive'")
     end
     
     it "takes an index name and value and finds all matching objects" do
@@ -304,6 +308,18 @@ describe Tractor::Model::Base do
     
     it "returns nil if nothing matches" do
       JohnDeere.find_by_attribute(:weight, "heavy").should == []
+    end
+  end
+  
+  describe ".to_h" do
+    it "returns the attributes for a mapped object in a hash" do
+      harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      
+      harvester = JohnDeere.find_by_id('a1a')
+      hashed_attributes = harvester.to_h
+      hashed_attributes[:id].should == "a1a"
+      hashed_attributes[:weight].should == "heavy"
+      hashed_attributes[:product].should == "harvester"
     end
   end
 end
