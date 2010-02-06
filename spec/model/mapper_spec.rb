@@ -89,26 +89,26 @@ describe Tractor::Model::Mapper do
     end
   end
       
-  #   describe ".dependencies_met?" do
-  #     context "when all dependencies are met" do
-  #       before do
-  #         BananaClient.stub!(:dependency_met_for?).and_return(true)
-  #       end
-  #       
-  #       it "returns true" do
-  #         BananaClient.dependencies_met?(MonkeyClient).should be_true
-  #       end
-  #     end
-  #     
-  #     context "when any dependency is not met" do
-  #       before do
-  #         BananaClient.stub!(:dependency_met_for?).and_return(false)
-  #       end
-  #       
-  #       it "returns false" do
-  #         BananaClient.dependencies_met?(MonkeyClient).should be_false
-  #       end
-  #     end
-  #   end
+  describe ".dependencies_met?" do
+    context "when all dependencies are met" do
+      before do
+        SlugClient.stub!(:dependency_met_for?).and_return(true)
+      end
+      
+      it "returns true" do
+        SlugClient.dependencies_met?(BananaClient).should be_true
+      end
+    end
+    
+    context "when any dependency is not met" do
+      before do
+        SlugClient.stub!(:dependency_met_for?).and_return(false)
+      end
+      
+      it "returns false" do
+        SlugClient.dependencies_met?(BananaClient).should be_false
+      end
+    end
+  end
   
 end
