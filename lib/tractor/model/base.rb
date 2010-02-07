@@ -101,15 +101,15 @@ module Tractor
       
       def update(attributes = {})
         attributes.delete(:id)
-        # instead of this just use all the setter methods for each passed attribute
+        
         attributes.each do |name, value|
-          if self.class.indices.include?(name)
+          if self.class.indices.include?(name.to_sym)
             index = Index.new(self.class, name, self.send(name))
             index.delete(self.id)
           end
         end
         
-        attribute_store.merge!(attributes)
+        attributes.each{ |k,v| self.send("#{k}=", v) }
         save
       end
       
