@@ -85,6 +85,20 @@ module Tractor
         return self
       end
       
+      def destroy
+        keys = Tractor.redis.keys("#{self.class}:#{self.id}:*")
+        delete_from_indices(keys.map{|k| k.split(":").last })
+        Tractor.redis.srem("#{self.class}:all", self.id)
+        keys.each { |k| Tractor.redis.del k }
+      end
+      
+      def update(attributes = {})
+        attributes.delete(:id)
+        delete_from_indices(attributes)
+        attributes.each{ |k,v| self.send("#{k}=", v) }
+        save
+      end
+      
       def add_to_indices
         self.class.indices.each do |name|
           index = Index.new(self.class, name, send(name))
@@ -101,65 +115,51 @@ module Tractor
         end
       end
       
-      def destroy
-        keys = Tractor.redis.keys("#{self.class}:#{self.id}:*")
-        delete_from_indices(keys.map{|k| k.split(":").last })
-        Tractor.redis.srem("#{self.class}:all", self.id)
-        keys.each { |k| Tractor.redis.del k }
-      end
-      
-      def update(attributes = {})
-        attributes.delete(:id)
-        delete_from_indices(attributes)
-        attributes.each{ |k,v| self.send("#{k}=", v) }
-        save
-      end
-      
       def to_h
         attribute_store
       end
       
-      def self.create(attributes={})
-        m = new(attributes)
-        m.save
-        m
-      end
-      
-      def self.find_by_id(id)
-        keys = Tractor.redis.keys("#{self}:#{id}:*")
-        return nil if keys.empty?
-        
-        scoped_attributes = Tractor.redis.mapped_mget(*keys)
-        unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
-          h[key.split(":").last] = value
-          h
-        end
-        self.new(unscoped_attributes)
-      end
-      
-      # use method missing to do craziness, or define a find_by on each index (BETTER)
-      def self.find_by_attribute(name, value)
-        raise "No index on '#{name}'" unless indices.include?(name)
-        
-        ids = Tractor.redis.smembers(Index.key_for(self, name, value))
-        ids.map do |id|
-          find_by_id(id)
-        end
-      end
-      
-      def self.find(options = {})
-        return [] if options.empty?
-        sets = options.map do |name, value|
-          Index.key_for(self, name, value)
-        end
-        ids = Tractor.redis.sinter(*sets)
-        ids.map do |id|
-          find_by_id(id)
-        end
-      end
-      
       class << self
         attr_reader :attributes, :associations, :indices
+        
+        def create(attributes={})
+          m = new(attributes)
+          m.save
+          m
+        end
+
+        def find_by_id(id)
+          keys = Tractor.redis.keys("#{self}:#{id}:*")
+          return nil if keys.empty?
+
+          scoped_attributes = Tractor.redis.mapped_mget(*keys)
+          unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
+            h[key.split(":").last] = value
+            h
+          end
+          self.new(unscoped_attributes)
+        end
+
+        # use method missing to do craziness, or define a find_by on each index (BETTER)
+        def find_by_attribute(name, value)
+          raise "No index on '#{name}'" unless indices.include?(name)
+
+          ids = Tractor.redis.smembers(Index.key_for(self, name, value))
+          ids.map do |id|
+            find_by_id(id)
+          end
+        end
+
+        def find(options = {})
+          return [] if options.empty?
+          sets = options.map do |name, value|
+            Index.key_for(self, name, value)
+          end
+          ids = Tractor.redis.sinter(*sets)
+          ids.map do |id|
+            find_by_id(id)
+          end
+        end
         
         def attribute(name, options={})
           options[:map] = name unless options[:map]
