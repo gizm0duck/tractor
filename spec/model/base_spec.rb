@@ -24,8 +24,6 @@ describe Tractor::Model::Base do
       index :product
       index :weight
     end
-    
-    @redis = Redis.new :db => 11
   end
   
   describe ".attribute" do

@@ -7,7 +7,10 @@ require 'spec/autorun'
 require 'redis'
 
 Spec::Runner.configure do |config|
-  config.before(:each) { Tractor.redis.flushdb }
+  config.before(:each) do 
+    @redis = Tractor.connectdb
+    Tractor.flushdb 
+  end
 end
 
 class BananaClient < Tractor::Model::Mapper

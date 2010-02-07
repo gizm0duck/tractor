@@ -4,10 +4,19 @@ module Tractor
   
   class << self
     attr_reader :redis
-  end
-  
-  def self.redis
-    @redis ||= Redis.new :db => 11
+    
+    # important options are port, host and db
+    def connectdb(options={})
+      if options.nil?
+        @redis = Redis.new(options)
+      else
+        @redis = Redis.new(:db => 1)
+      end
+    end
+
+    def flushdb
+      @redis.flushdb
+    end
   end
   
   class Set
