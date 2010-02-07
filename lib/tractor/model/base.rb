@@ -41,7 +41,11 @@ module Tractor
     end
     
     def insert(id)
-      Tractor.redis.sadd(key, id)
+      Tractor.redis.sadd(key, id) unless Tractor.redis.smembers(key).include?(id)
+    end
+    
+    def delete(id)
+      Tractor.redis.srem(key, id)
     end
     
     def self.key_for(klass, name, value)
@@ -68,7 +72,7 @@ module Tractor
       def save
         raise "Probably wanna set an id" if self.id.nil? || self.id.empty?
         key_base = "#{self.class}:#{self.id}"
-        raise "Duplicate value for #{self.class} 'id'" if Tractor.redis.keys("#{key_base}:*").any?
+        #raise "Duplicate value for #{self.class} 'id'" if Tractor.redis.keys("#{key_base}:*").any?
         
         scoped_attributes = attribute_store.inject({}) do |h, (attr_name, value)| 
           h["#{key_base}:#{attr_name}"] = value
@@ -76,18 +80,40 @@ module Tractor
         end
         Tractor.redis.mset scoped_attributes
         Tractor.redis.sadd "#{self.class}:all", self.id
-        update_indices
+        add_to_indices
+        
+        return self
       end
       
       def destroy
-        
+        key_base = "#{self.class}:#{self.id}"
+        keys = Tractor.redis.keys("#{key_base}:*")
+
+        keys.map{|k| k.split(":").last }.each do |name|
+          if self.class.indices.include?(name.to_sym)
+            index = Index.new(self.class, name, self.send(name))
+            index.delete(self.id)
+          end
+        end
+        Tractor.redis.srem("#{self.class}:all", self.id)
+        keys.each { |k| Tractor.redis.del k }
       end
       
       def update(attributes = {})
+        attributes.delete(:id)
+        # instead of this just use all the setter methods for each passed attribute
+        attributes.each do |name, value|
+          if self.class.indices.include?(name)
+            index = Index.new(self.class, name, self.send(name))
+            index.delete(self.id)
+          end
+        end
         
+        attribute_store.merge!(attributes)
+        save
       end
       
-      def update_indices
+      def add_to_indices
         self.class.indices.each do |name|
           index = Index.new(self.class, name, send(name))
           index.insert(self.id)

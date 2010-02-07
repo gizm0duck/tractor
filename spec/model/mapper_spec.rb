@@ -107,7 +107,7 @@ describe Tractor::Model::Mapper do
       
       MonkeyClient.update_from_instance(monkey)
       MonkeyClient.all.size.should == 1
-      redis_monkey = MonkeyClient[redis_id]
+      redis_monkey = MonkeyClient.find_by_id(redis_id)
       
       redis_monkey.birthday.should == "Dec. 2, 1981"
       redis_monkey.evil.should == false

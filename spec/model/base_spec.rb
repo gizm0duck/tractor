@@ -196,12 +196,12 @@ describe Tractor::Model::Base do
   
   describe "#create" do
     it "allows you to specify which attributes should be unique"
-    it "raises exception if the id exists" do
-      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
-      lambda do
-        MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
-      end.should raise_error("Duplicate value for MonkeyClient 'id'")
-    end
+    # it "raises exception if the id exists" do
+    #   MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+    #   lambda do
+    #     MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
+    #   end.should raise_error("Duplicate value for MonkeyClient 'id'")
+    # end
     
     it "should write attributes to redis" do
       monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
@@ -240,11 +240,64 @@ describe Tractor::Model::Base do
   end
   
   describe "#update" do
-    it "should be specced"
+    attr_reader :harvester
+    
+    before do
+      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+    end
+        
+    it "updates the item from redis" do
+      @harvester.update( {:weight => "light"} )
+      @harvester.weight.should == "light"
+    end
+    
+    it "does not update the id" do
+      @harvester.update( {:id => "111111"} )
+      @harvester.id.should == "a1a"
+    end
+    
+    it "only changes attributes passed in" do
+      @harvester.update( {:weight => "light"} )
+      @harvester.id.should == "a1a"
+      @harvester.weight.should == "light"
+      @harvester.product.should == "harvester"
+    end
+    
+    it "updates all the indices associated with this object" do
+      JohnDeere.find( {:weight => "light"} ).should be_empty
+      JohnDeere.find( {:weight => "heavy"} ).should_not be_empty
+      harvester.update( {:weight => "light"} )
+      JohnDeere.find( {:weight => "light"} ).should_not be_empty
+      JohnDeere.find( {:weight => "heavy"} ).should be_empty
+    end
+    
+    it "raises if object has not been saved yet"
   end
   
   describe "#destroy" do
-    it "should be specced"
+    attr_reader :harvester
+    
+    before do
+      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      @seeder = JohnDeere.create({ :id => 'b1b', :weight => "heavy", :product => "seeder" })
+    end
+    
+    it "removes the item from redis" do
+      @harvester.destroy
+      JohnDeere.find_by_id(@harvester.id).should be_nil
+    end
+    
+    it "removes the id from the all index" do
+      JohnDeere.all.map{|t| t.id }.should == ["a1a", "b1b"]
+      @harvester.destroy
+      JohnDeere.all.map{|t| t.id }.should == ["b1b"]
+    end
+    
+    it "removes the id from all of it's other indices" do
+      JohnDeere.find({ :weight => "heavy" }).size.should == 2
+      @harvester.destroy
+      JohnDeere.find({ :weight => "heavy" }).size.should == 1
+    end
   end
   
   describe ".find" do
