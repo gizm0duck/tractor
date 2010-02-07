@@ -85,39 +85,34 @@ module Tractor
         return self
       end
       
-      def destroy
-        key_base = "#{self.class}:#{self.id}"
-        keys = Tractor.redis.keys("#{key_base}:*")
-
-        keys.map{|k| k.split(":").last }.each do |name|
-          if self.class.indices.include?(name.to_sym)
-            index = Index.new(self.class, name, self.send(name))
-            index.delete(self.id)
-          end
+      def add_to_indices
+        self.class.indices.each do |name|
+          index = Index.new(self.class, name, send(name))
+          index.insert(self.id)
         end
-        Tractor.redis.srem("#{self.class}:all", self.id)
-        keys.each { |k| Tractor.redis.del k }
       end
       
-      def update(attributes = {})
-        attributes.delete(:id)
-        
+      def delete_from_indices(attributes)
         attributes.each do |name, value|
           if self.class.indices.include?(name.to_sym)
             index = Index.new(self.class, name, self.send(name))
             index.delete(self.id)
           end
         end
-        
-        attributes.each{ |k,v| self.send("#{k}=", v) }
-        save
       end
       
-      def add_to_indices
-        self.class.indices.each do |name|
-          index = Index.new(self.class, name, send(name))
-          index.insert(self.id)
-        end
+      def destroy
+        keys = Tractor.redis.keys("#{self.class}:#{self.id}:*")
+        delete_from_indices(keys.map{|k| k.split(":").last })
+        Tractor.redis.srem("#{self.class}:all", self.id)
+        keys.each { |k| Tractor.redis.del k }
+      end
+      
+      def update(attributes = {})
+        attributes.delete(:id)
+        delete_from_indices(attributes)
+        attributes.each{ |k,v| self.send("#{k}=", v) }
+        save
       end
       
       def to_h
@@ -231,7 +226,7 @@ module Tractor
       
       private 
       
-      attr_reader :attribute_store, :association_store
+        attr_reader :attribute_store, :association_store
     end
   end
 end
