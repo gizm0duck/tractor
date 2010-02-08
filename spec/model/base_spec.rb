@@ -3,17 +3,19 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 describe Tractor::Model::Base do
   attr_reader :redis
   before do
+    class Player < Tractor::Model::Base
+      attribute :id
+      attribute :name
+      attribute :wins_loses
+    end
+    
     class Game < Tractor::Model::Base
       attribute :id
       attribute :board
       attribute :flying_object
       attribute :score, :type => :integer
-    end
-    
-    class Player < Tractor::Model::Base
-      attribute :id
-      attribute :name
-      attribute :wins_loses
+      
+      association :players, Player
     end
   end
   
@@ -54,38 +56,38 @@ describe Tractor::Model::Base do
   end
   
   describe "#association" do
-    attr_reader :monkey, :banana, :banana2
+    attr_reader :game, :player1, :player2
     
     before do
-      @monkey   = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
-      @banana   = BananaClient.new({ :id => 'b1b', :name => "delicious" })
-      @banana2  = BananaClient.new({ :id => 'b2b', :name => "gross" })
+      @game     = Game.new({ :id => 'g1' })
+      @player1  = Player.new({ :id => 'p1', :name => "delicious" })
+      @player2  = Player.new({ :id => 'p2', :name => "gross" })
       
-      monkey.save
-      banana.save
+      game.save
+      player1.save
+      player2.save
     end
     
     it "adds a set with the given name to the instance" do # "Monkey:a1a:SET_NAME"
-      MonkeyClient.associations.keys.should include(:bananas)
+      Game.associations.keys.should include(:players)
     end
     
     it "adds a push method for the set on an instance of the class" do
-      monkey.bananas.push banana
-      redis.smembers('MonkeyClient:a1a:bananas').should == ['b1b']
+      game.players.push player1
+      redis.smembers('Game:g1:players').should == ['p1']
     end
     
     it "adds an all method for the association to return the items in it" do
-      banana2.save
-      monkey.bananas.all.should == []
-      monkey.bananas.push banana
-      monkey.bananas.push banana2
-      banana_from_monkey  = monkey.bananas.all[0]
-      banana2_from_monkey = monkey.bananas.all[1]
+      game.players.all.should == []
+      game.players.push player1
+      game.players.push player2
+      player1_from_game = game.players.all[0]
+      player2_from_game = game.players.all[1]
       
-      banana_from_monkey.name.should == banana.name
-      banana_from_monkey.id.should == banana.id
-      banana2_from_monkey.name.should == banana2.name
-      banana2_from_monkey.id.should == banana2.id
+      player1_from_game.name.should == player1.name
+      player1_from_game.id.should == player1.id
+      player2_from_game.name.should == player2.name
+      player2_from_game.id.should == player2.id
     end
     
     it "requires the object being added to have been saved to the database before adding it to the set"
@@ -286,6 +288,8 @@ describe Tractor::Model::Base do
       cheese.destroy
       Sammich.find({ :weight => "medium" }).size.should == 1
     end
+    
+    it "removes the id from all of the associations that it may be in"
   end
   
   describe ".find" do
