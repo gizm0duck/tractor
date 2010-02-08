@@ -95,7 +95,7 @@ describe Tractor::Model::Base do
   
   describe ".associations" do
     it "returns all association that have been added to this class" do
-      MonkeyClient.associations.keys.should == [:bananas]
+      Game.associations.keys.should == [:players]
     end
   end
   
@@ -132,31 +132,28 @@ describe Tractor::Model::Base do
   
   describe "#save" do
     it "raises if id is nil or empty" do
-      monkey = MonkeyClient.new
-      monkey.id = nil
-      lambda { monkey.save }.should raise_error("Probably wanna set an id")
-      monkey.id = ''
-      lambda { monkey.save }.should raise_error("Probably wanna set an id")
+      game = Game.new
+      game.id = nil
+      lambda { game.save }.should raise_error("Probably wanna set an id")
+      game.id = ''
+      lambda { game.save }.should raise_error("Probably wanna set an id")
     end
     
     it "should write attributes to redis" do
-      monkey = MonkeyClient.new
-      monkey.id = 'a1a'
-      monkey.evil = true
-      monkey.birthday = "Dec 3"
-      monkey.save
+      game = Game.new({:id => '1', :board => "large", :flying_object => "disc"})
+      game.save
       
-      redis["MonkeyClient:a1a:id"].should == "a1a"
-      redis["MonkeyClient:a1a:evil"].should == "true"
-      redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
+      redis["Game:1:id"].should == "1"
+      redis["Game:1:board"].should == "large"
+      redis["Game:1:flying_object"].should == "disc"
     end
     
-    it "appends the new object to the MonkeyClient set" do
-      MonkeyClient.all.size.should == 0
-      monkey = MonkeyClient.new({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
-      monkey.save
+    it "appends the new object to the Game set" do
+      Game.all.size.should == 0
+      game = Game.new({ :id => '1', :board => "small" })
+      game.save
       
-      MonkeyClient.all.size.should == 1
+      Game.all.size.should == 1
     end
   end
   
