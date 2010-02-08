@@ -13,6 +13,15 @@ Spec::Runner.configure do |config|
   end
 end
 
+class Sammich < Tractor::Model::Base
+  attribute :id
+  attribute :product
+  attribute :weight
+  attribute :expensive, :type => :boolean
+  index :product
+  index :weight
+end
+
 class BananaClient < Tractor::Model::Mapper
   attribute :id
   attribute :name

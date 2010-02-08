@@ -15,15 +15,6 @@ describe Tractor::Model::Base do
       attribute :name
       attribute :wins_loses
     end
-    
-    class JohnDeere < Tractor::Model::Base
-      attribute :id
-      attribute :product
-      attribute :weight
-      attribute :expensive, :type => :boolean
-      index :product
-      index :weight
-    end
   end
   
   describe ".attribute" do
@@ -47,9 +38,9 @@ describe Tractor::Model::Base do
     
     describe "when attribute is a boolean" do
       it "returns a boolean" do
-        tractor = JohnDeere.new(:expensive => true)
-        tractor.expensive.should == true
-        tractor.expensive.should be_a(TrueClass)
+        expensive_sammich = Sammich.new(:expensive => true)
+        expensive_sammich.expensive.should == true
+        expensive_sammich.expensive.should be_a(TrueClass)
       end
     end
     
@@ -108,7 +99,7 @@ describe Tractor::Model::Base do
   
   describe ".indices" do
     it "returns all indices on a class" do
-      JohnDeere.indices.should == [:product, :weight]
+      Sammich.indices.should == [:product, :weight]
     end
   end
   
@@ -202,175 +193,173 @@ describe Tractor::Model::Base do
     # end
     
     it "should write attributes to redis" do
-      monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      sammich = Sammich.create({ :id => '1', :product => "Veggie Sammich" })
       
-      redis["MonkeyClient:a1a:id"].should == "a1a"
-      redis["MonkeyClient:a1a:evil"].should == "true"
-      redis["MonkeyClient:a1a:birthday"].should == "Dec 3"
+      redis["Sammich:1:id"].should == "1"
+      redis["Sammich:1:product"].should == "Veggie Sammich"
     end
     
     it "populates all the indices that are specified on the class" do
-      JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
-  
-      redis.smembers("JohnDeere:product:aGFydmVzdGVy").should include('a1a')
-      redis.smembers("JohnDeere:product:c2VlZGVy").should include('b2b')
-      redis.smembers("JohnDeere:weight:aGVhdnk=").should == ['a1a', 'b2b']
+      Sammich.create({ :id => '1', :weight => "heavy", :product => "Ham Sammich" })
+      Sammich.create({ :id => '2', :weight => "heavy", :product => "Tuna Sammich" })
+
+      redis.smembers("Sammich:product:SGFtIFNhbW1pY2g=").should include('1')
+      redis.smembers("Sammich:product:VHVuYSBTYW1taWNo").should include('2')
+      redis.smembers("Sammich:weight:aGVhdnk=").should == ['1', '2']
     end
     
     it "returns the instance that has been created" do
-      harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      harvester.weight.should == "heavy"
+      sammich = Sammich.create({ :id => '1', :weight => "heavy", :product => "Tuna Melt" })
+      sammich.weight.should == "heavy"
     end
   end
   
   describe ".find_by_id" do
     it "takes an id and returns the object from redis" do
-      monkey = MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      sammich = Sammich.create({ :id => '1', :product => "Cold Cut Trio" })
       
-      redis_monkey = MonkeyClient.find_by_id('a1a')
-      redis_monkey.birthday.should == "Dec 3"
+      redis_sammich = Sammich.find_by_id('1')
+      redis_sammich.product.should == "Cold Cut Trio"
     end
     
     it "returns nil if the keys do not exist in redis" do
-      MonkeyClient.find_by_id('a1a').should be_nil
+      Sammich.find_by_id('1').should be_nil
     end
   end
   
   describe "#update" do
-    attr_reader :harvester
+    attr_reader :sammich
     
     before do
-      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      @sammich = Sammich.create({ :id => '1', :weight => "medium", :product => "Turkey Avocado" })
     end
         
     it "updates the item from redis" do
-      @harvester.update( {:weight => "light"} )
-      @harvester.weight.should == "light"
+      @sammich.update( {:weight => "heavy"} )
+      @sammich.weight.should == "heavy"
     end
     
     it "does not update the id" do
-      @harvester.update( {:id => "111111"} )
-      @harvester.id.should == "a1a"
+      @sammich.update( {:id => "111111"} )
+      @sammich.id.should == "1"
     end
     
     it "only changes attributes passed in" do
-      @harvester.update( {:weight => "light"} )
-      @harvester.id.should == "a1a"
-      @harvester.weight.should == "light"
-      @harvester.product.should == "harvester"
+      @sammich.update( {:weight => "light"} )
+      @sammich.id.should == "1"
+      @sammich.weight.should == "light"
+      @sammich.product.should == "Turkey Avocado"
     end
     
     it "updates all the indices associated with this object" do
-      JohnDeere.find( {:weight => "light"} ).should be_empty
-      JohnDeere.find( {:weight => "heavy"} ).should_not be_empty
-      harvester.update( {:weight => "light"} )
-      JohnDeere.find( {:weight => "light"} ).should_not be_empty
-      JohnDeere.find( {:weight => "heavy"} ).should be_empty
+      Sammich.find( {:weight => "light"} ).should be_empty
+      Sammich.find( {:weight => "medium"} ).should_not be_empty
+      sammich.update( {:weight => "light"} )
+      Sammich.find( {:weight => "light"} ).should_not be_empty
+      Sammich.find( {:weight => "medium"} ).should be_empty
     end
     
     it "raises if object has not been saved yet"
   end
   
   describe "#destroy" do
-    attr_reader :harvester
+    attr_reader :cheese, :balogna
     
     before do
-      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      @seeder = JohnDeere.create({ :id => 'b1b', :weight => "heavy", :product => "seeder" })
+      @cheese = Sammich.create({ :id => '1', :weight => "medium", :product => "Cheese Sammich" })
+      @balogna = Sammich.create({ :id => '2', :weight => "medium", :product => "Balogna Sammich" })
     end
     
     it "removes the item from redis" do
-      @harvester.destroy
-      JohnDeere.find_by_id(@harvester.id).should be_nil
+      @cheese.destroy
+      Sammich.find_by_id(cheese.id).should be_nil
     end
     
     it "removes the id from the all index" do
-      JohnDeere.all.map{|t| t.id }.should == ["a1a", "b1b"]
-      @harvester.destroy
-      JohnDeere.all.map{|t| t.id }.should == ["b1b"]
+      Sammich.all.map{|t| t.id }.should == ["1", "2"]
+      cheese.destroy
+      Sammich.all.map{|t| t.id }.should == ["2"]
     end
     
     it "removes the id from all of it's other indices" do
-      JohnDeere.find({ :weight => "heavy" }).size.should == 2
-      @harvester.destroy
-      JohnDeere.find({ :weight => "heavy" }).size.should == 1
+      Sammich.find({ :weight => "medium" }).size.should == 2
+      cheese.destroy
+      Sammich.find({ :weight => "medium" }).size.should == 1
     end
   end
   
   describe ".find" do
-    attr_reader :harvester, :seeder
+    attr_reader :cheese, :balogna
+    
     before do
-      @harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      @seeder = JohnDeere.create({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
+      @cheese = Sammich.create({ :id => '1', :weight => "medium", :product => "Cheese Sammich" })
+      @balogna = Sammich.create({ :id => '2', :weight => "medium", :product => "Balogna Sammich" })
     end
     
     context "when searching on 1 attribute" do
       it "returns all matching products" do
-        redis_harvester, redis_seeder = JohnDeere.find( {:weight => "heavy" } )
+        redis_cheese, redis_balogna = Sammich.find( {:weight => "medium" } )
         
-        redis_harvester.id.should == harvester.id
-        redis_harvester.product.should == harvester.product
-        redis_seeder.id.should == seeder.id
-        redis_seeder.product.should == seeder.product
+        redis_cheese.id.should == cheese.id
+        redis_cheese.product.should == cheese.product
+        redis_balogna.id.should == balogna.id
+        redis_balogna.product.should == balogna.product
       end
     end
     
     context "when searching on multiple attribute" do
       it "returns the intersection of all matching objects" do
-        products = JohnDeere.find( {:weight => "heavy", :product => "seeder" } )
-        products.size.should == 1
-        products[0].id.should == "b2b"
-        products[0].product.should == "seeder"
+        sammiches = Sammich.find( {:weight => "medium", :product => "Cheese Sammich" } )
+        sammiches.size.should == 1
+        sammiches[0].id.should == "1"
+        sammiches[0].product.should == "Cheese Sammich"
       end
     end
     
     it "returns empty array if no options are given" do
-      JohnDeere.find({}).should == []
+      Sammich.find({}).should == []
     end
     
     it "returns empty array if nothing matches the given options" do
-      JohnDeere.find( {:weight => "light" } ).should == []
+      Sammich.find( {:weight => "light" } ).should == []
     end
   end
   
   describe ".find_by_attribute" do
     it "raises if index does not exist for given key" do
       lambda do
-        JohnDeere.find_by_attribute(:expensive, true)
+        Sammich.find_by_attribute(:expensive, true)
       end.should raise_error("No index on 'expensive'")
     end
     
     it "takes an index name and value and finds all matching objects" do
-      harvester = JohnDeere.new({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
-      seeder = JohnDeere.new({ :id => 'b2b', :weight => "heavy", :product => "seeder" })
-      harvester.save
-      seeder.save
+      meat_supreme = Sammich.create({ :id => '1', :weight => "heavy", :product => "Meat Supreme" })
+      bacon_with_bacon = Sammich.create({ :id => '2', :weight => "heavy", :product => "Bacon with extra Bacon" })
     
-      redis_harvester, redis_seeder = JohnDeere.find_by_attribute(:weight, "heavy")
-      redis_harvester.id.should == harvester.id
-      redis_harvester.weight.should == harvester.weight
-      redis_harvester.product.should == harvester.product
+      redis_meat_supreme, redis_bacon_with_bacon = Sammich.find_by_attribute(:weight, "heavy")
+      redis_meat_supreme.id.should == meat_supreme.id
+      redis_meat_supreme.weight.should == meat_supreme.weight
+      redis_meat_supreme.product.should == meat_supreme.product
       
-      redis_seeder.id.should == seeder.id
-      redis_seeder.weight.should == seeder.weight
-      redis_seeder.product.should == seeder.product
+      redis_bacon_with_bacon.id.should == bacon_with_bacon.id
+      redis_bacon_with_bacon.weight.should == bacon_with_bacon.weight
+      redis_bacon_with_bacon.product.should == bacon_with_bacon.product
     end
     
     it "returns nil if nothing matches" do
-      JohnDeere.find_by_attribute(:weight, "heavy").should == []
+      Sammich.find_by_attribute(:weight, "heavy").should == []
     end
   end
   
   describe ".to_h" do
     it "returns the attributes for a mapped object in a hash" do
-      harvester = JohnDeere.create({ :id => 'a1a', :weight => "heavy", :product => "harvester" })
+      chicken = Sammich.create({ :id => '1', :weight => "heavy", :product => "Chicken" })
       
-      harvester = JohnDeere.find_by_id('a1a')
-      hashed_attributes = harvester.to_h
-      hashed_attributes[:id].should == "a1a"
+      chicken = Sammich.find_by_id('1')
+      hashed_attributes = chicken.to_h
+      hashed_attributes[:id].should == "1"
       hashed_attributes[:weight].should == "heavy"
-      hashed_attributes[:product].should == "harvester"
+      hashed_attributes[:product].should == "Chicken"
     end
   end
 end
