@@ -237,4 +237,35 @@ describe Tractor::Model::Mapper do
     end
   end
   
+  describe ".ensure_dependencies_met" do
+    attr_reader :banana, :slug
+    describe "when the dependencies are met" do
+      before do
+        SlugClient.stub!(:dependencies_met?).and_return(true)
+        @banana = Banana.new('banana1', 'yellowish')
+        @slug = Slug.new('slug1', 'banana1')
+      end
+      
+      it "Does not create any objects" do
+        BananaClient.all.should be_empty
+        SlugClient.ensure_dependencies_met(banana)
+        BananaClient.all.should be_empty
+      end
+    end
+    
+    describe "when the dependencies are NOT met" do
+      before do
+        @banana = Banana.new('banana1', 'yellowish')
+        @slug = Slug.new('slug1', 'banana1')
+        
+        SlugClient.dependencies_met?(slug).should be_false
+      end
+      
+      it "creates the dependent objects" do
+        BananaClient.all.should be_empty
+        SlugClient.ensure_dependencies_met(slug)
+        BananaClient.all.should_not be_empty
+      end
+    end
+  end
 end

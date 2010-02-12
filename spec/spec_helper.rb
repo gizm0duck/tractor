@@ -68,6 +68,6 @@ class Slug
   end
   
   def banana
-    Banana.new("1", "yellow")
+    Banana.new(banana_id, "yellow")
   end
 end

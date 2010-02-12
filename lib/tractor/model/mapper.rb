@@ -70,10 +70,11 @@ module Tractor
           return true
         end
         
-        def ensure_dependencies_met(server_instance)
+        def ensure_dependencies_met(server_instance)          
           return if dependencies_met?(server_instance)
+
           dependencies.each do |klass, options|
-            if klass.find_by_id(server_instance.send(options[:key_name]))
+            if klass.find_by_id(server_instance.send(options[:key_name])).nil?
               server_instances = server_instance.send(options[:method_name])
               server_instances = server_instances.is_a?(Array) ? server_instances : [server_instances]
               server_instances.each do |obj|
