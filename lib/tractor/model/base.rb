@@ -79,7 +79,7 @@ module Tractor
       end
       
       def save
-        raise "Probably wanna set an id" if self.id.nil? || self.id.empty?
+        raise "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
         key_base = "#{self.class}:#{self.id}"
         #raise "Duplicate value for #{self.class} 'id'" if Tractor.redis.keys("#{key_base}:*").any?
         
