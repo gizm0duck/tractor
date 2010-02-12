@@ -73,6 +73,7 @@ module Tractor
       def initialize(attributes={})
         @attribute_store = {}
         @association_store = {}
+        
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -125,7 +126,10 @@ module Tractor
       end
       
       def to_h
-        attribute_store
+        self.class.attributes.keys.inject({}) do |h, attribute|
+          h[attribute.to_sym] = self.send(attribute)
+          h
+        end
       end
       
       class << self
@@ -143,7 +147,15 @@ module Tractor
 
           scoped_attributes = Tractor.redis.mapped_mget(*keys)
           unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
-            h[key.split(":").last] = value
+
+            name = key.split(":").last
+            type = attributes[name.to_sym][:type]
+            if type == :integer
+              value = value.to_i
+            elsif type == :boolean
+              value = value.to_s.match(/(true|1)$/i) != nil
+            end
+            h[name] = value
             h
           end
           self.new(unscoped_attributes)
