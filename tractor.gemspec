@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{tractor}
-  s.version = "0.1.0"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Shane Wolf"]
-  s.date = %q{2010-02-06}
+  s.date = %q{2010-02-12}
   s.description = %q{Very simple object mappings for ruby objects}
   s.email = %q{shanewolf@gmail.com}
   s.extra_rdoc_files = [
@@ -25,10 +25,13 @@ Gem::Specification.new do |s|
      "VERSION",
      "lib/tractor.rb",
      "lib/tractor/model/base.rb",
+     "lib/tractor/model/mapper.rb",
      "spec/model/base_spec.rb",
+     "spec/model/mapper_spec.rb",
      "spec/spec.opts",
      "spec/spec_helper.rb",
-     "spec/tractor_spec.rb"
+     "spec/tractor_spec.rb",
+     "tractor.gemspec"
   ]
   s.homepage = %q{http://github.com/gizm0duck/tractor}
   s.rdoc_options = ["--charset=UTF-8"]
@@ -37,6 +40,7 @@ Gem::Specification.new do |s|
   s.summary = %q{Very simple object mapping for ruby objects}
   s.test_files = [
     "spec/model/base_spec.rb",
+     "spec/model/mapper_spec.rb",
      "spec/spec_helper.rb",
      "spec/tractor_spec.rb"
   ]
