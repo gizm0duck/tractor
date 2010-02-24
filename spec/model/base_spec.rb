@@ -184,6 +184,19 @@ describe Tractor::Model::Base do
     end
   end
   
+  describe "#.ids" do
+    before do
+      Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
+      Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
+      Player.create({ :id => 'p1', :name => "delicious" })
+    end
+    
+    it "returns all the ids for a given class" do
+      Sammich.ids.should == ['s1', 's2']
+      Player.ids.should == ['p1']
+    end
+  end
+  
   describe "#create" do
     it "allows you to specify which attributes should be unique"
 

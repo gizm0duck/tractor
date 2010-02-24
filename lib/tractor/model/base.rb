@@ -134,6 +134,10 @@ module Tractor
           m.save
           m
         end
+        
+        def ids
+          Tractor.redis.smembers "#{self}:all"
+        end
 
         def find_by_id(id)
           redis_obj = Tractor.redis["#{self}:#{id}"]
