@@ -197,6 +197,19 @@ describe Tractor::Model::Base do
     end
   end
   
+  describe ".count" do
+    before do
+      Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
+      Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
+      Player.create({ :id => 'p1', :name => "delicious" })
+    end
+    
+    it "returns the count of all items of a given class" do
+      Sammich.count.should == 2
+      Player.count.should == 1
+    end
+  end
+  
   describe ".ids_for_find" do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
