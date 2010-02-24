@@ -150,10 +150,14 @@ module Tractor
         def find_by_attribute(name, value)
           raise "No index on '#{name}'" unless indices.include?(name)
 
-          ids = Tractor.redis.smembers(Index.key_for(self, name, value))
+          ids = ids_for_find(name, value)
           ids.map do |id|
             find_by_id(id)
           end
+        end
+        
+        def ids_for_find(name, value)
+          Tractor.redis.smembers(Index.key_for(self, name, value))
         end
 
         def find(options = {})

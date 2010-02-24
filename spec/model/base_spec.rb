@@ -184,7 +184,7 @@ describe Tractor::Model::Base do
     end
   end
   
-  describe "#.ids" do
+  describe ".ids" do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
@@ -194,6 +194,18 @@ describe Tractor::Model::Base do
     it "returns all the ids for a given class" do
       Sammich.ids.should == ['s1', 's2']
       Player.ids.should == ['p1']
+    end
+  end
+  
+  describe ".ids_for_find" do
+    before do
+      Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
+      Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
+      Player.create({ :id => 'p1', :name => "delicious" })
+    end
+    
+    it "returns all the ids for a given attribute and value on a class" do
+      Sammich.ids_for_find(:weight, "medium").should == ['s1', 's2']
     end
   end
   
