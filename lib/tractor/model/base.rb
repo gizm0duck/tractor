@@ -81,14 +81,8 @@ module Tractor
       
       def save
         raise "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
-        key_base = "#{self.class}:#{self.id}"
-        #raise "Duplicate value for #{self.class} 'id'" if Tractor.redis.keys("#{key_base}:*").any?
         
-        scoped_attributes = attribute_store.inject({}) do |h, (attr_name, value)| 
-          h["#{key_base}:#{attr_name}"] = value
-          h
-        end
-        Tractor.redis.mset scoped_attributes
+        Tractor.redis["#{self.class}:#{self.id}"] = Marshal.dump(self)
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         
@@ -96,10 +90,9 @@ module Tractor
       end
       
       def destroy
-        keys = Tractor.redis.keys("#{self.class}:#{self.id}:*")
-        delete_from_indices(keys.map{|k| k.split(":").last })
+        delete_from_indices(attribute_store)
         Tractor.redis.srem("#{self.class}:all", self.id)
-        keys.each { |k| Tractor.redis.del k }
+        Tractor.redis.del "#{self.class}:#{self.id}"
       end
       
       def update(attributes = {})
@@ -136,29 +129,17 @@ module Tractor
         attr_reader :attributes, :associations, :indices
         
         def create(attributes={})
+          raise "Duplicate value for #{self} 'id'" if Tractor.redis.sismember("#{self}:all", attributes[:id])
           m = new(attributes)
           m.save
           m
         end
 
         def find_by_id(id)
-          keys = Tractor.redis.keys("#{self}:#{id}:*")
-          return nil if keys.empty?
-
-          scoped_attributes = Tractor.redis.mapped_mget(*keys)
-          unscoped_attributes = scoped_attributes.inject({}) do |h, (key, value)| 
-
-            name = key.split(":").last
-            type = attributes[name.to_sym][:type]
-            if type == :integer
-              value = value.to_i
-            elsif type == :boolean
-              value = value.to_s.match(/(true|1)$/i) != nil
-            end
-            h[name] = value
-            h
-          end
-          self.new(unscoped_attributes)
+          redis_obj = Tractor.redis["#{self}:#{id}"]
+          return nil if redis_obj.nil?
+          
+          Marshal.load(redis_obj)
         end
 
         # use method missing to do craziness, or define a find_by on each index (BETTER)

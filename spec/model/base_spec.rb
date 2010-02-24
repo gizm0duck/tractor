@@ -54,7 +54,7 @@ describe Tractor::Model::Base do
       end
     end
   end
-  
+    
   describe "#association" do
     attr_reader :game, :player1, :player2
     
@@ -143,9 +143,11 @@ describe Tractor::Model::Base do
       game = Game.new({:id => '1', :board => "large", :flying_object => "disc"})
       game.save
       
-      redis["Game:1:id"].should == "1"
-      redis["Game:1:board"].should == "large"
-      redis["Game:1:flying_object"].should == "disc"
+      redis["Game:1"].should_not be_nil
+      redis_game = Marshal.load(redis["Game:1"])
+      redis_game.id.should == "1"
+      redis_game.board.should == "large"
+      redis_game.flying_object.should == "disc"
     end
     
     it "appends the new object to the Game set" do
@@ -156,7 +158,7 @@ describe Tractor::Model::Base do
       Game.all.size.should == 1
     end
   end
-  
+    
   describe ".all" do
     it "every object that is created for this class will be in this set" do
       MonkeyClient.all.size.should == 0
@@ -184,24 +186,26 @@ describe Tractor::Model::Base do
   
   describe "#create" do
     it "allows you to specify which attributes should be unique"
-    # it "raises exception if the id exists" do
-    #   MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
-    #   lambda do
-    #     MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
-    #   end.should raise_error("Duplicate value for MonkeyClient 'id'")
-    # end
+
+    it "raises exception if the id exists" do
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      lambda do
+        MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
+      end.should raise_error("Duplicate value for MonkeyClient 'id'")
+    end
     
     it "should write attributes to redis" do
       sammich = Sammich.create({ :id => '1', :product => "Veggie Sammich" })
       
-      redis["Sammich:1:id"].should == "1"
-      redis["Sammich:1:product"].should == "Veggie Sammich"
+      redis_sammich = Marshal.load(redis["Sammich:1"])
+      redis_sammich.id.should == "1"
+      redis_sammich.product.should == "Veggie Sammich"
     end
     
     it "populates all the indices that are specified on the class" do
       Sammich.create({ :id => '1', :weight => "heavy", :product => "Ham Sammich" })
       Sammich.create({ :id => '2', :weight => "heavy", :product => "Tuna Sammich" })
-
+  
       redis.smembers("Sammich:product:SGFtIFNhbW1pY2g=").should include('1')
       redis.smembers("Sammich:product:VHVuYSBTYW1taWNo").should include('2')
       redis.smembers("Sammich:weight:aGVhdnk=").should == ['1', '2']
