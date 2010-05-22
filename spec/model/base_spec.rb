@@ -77,6 +77,12 @@ describe Tractor::Model::Base do
       redis.smembers('Game:g1:players').should == ['p1']
     end
     
+    it "adds an ids method for the set that returns all ids in it" do
+      game.players.ids.should be_empty
+      game.players.push player1
+      game.players.ids.should == [player1.id]
+    end
+    
     it "adds an all method for the association to return the items in it" do
       game.players.all.should == []
       game.players.push player1

@@ -33,8 +33,11 @@ module Tractor
       Tractor.redis.sadd key, val.id
     end
     
+    def ids
+      Tractor.redis.smembers(key)
+    end
+    
     def all
-      ids = Tractor.redis.smembers(key)
       ids.inject([]){ |a, id| a << klass.find_by_id(id); a }
     end
   end
