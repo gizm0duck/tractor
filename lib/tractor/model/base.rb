@@ -19,7 +19,7 @@ module Tractor
     end
   end
   
-  class Set
+  class Association
     attr_accessor :key, :klass
 
     def initialize(key, klass)
@@ -28,7 +28,7 @@ module Tractor
     end
     
     def push(val)
-      Tractor.redis.sadd key, val.id
+      Tractor.redis.sadd(key, val.id)
     end
     
     def ids
@@ -36,7 +36,7 @@ module Tractor
     end
     
     def all
-      ids.inject([]){ |a, id| a << klass.find_by_id(id); a }
+      ids.inject([]){ |o, id| o << klass.find_by_id(id); o }
     end
   end
   
@@ -144,14 +144,6 @@ module Tractor
           m.save
           m
         end
-        
-        def ids
-          Tractor.redis.smembers "#{self}:all"
-        end
-        
-        def count
-          ids.size
-        end
 
         def find_by_id(id)
           redis_obj = Tractor.redis["#{self}:#{id}"]
@@ -203,12 +195,19 @@ module Tractor
           associations[name] = name
           
           define_method(name) do
-            @association_store[name] = Set.new("#{self.class}:#{self.id}:#{name}", klass)
+            @association_store[name] = Association.new("#{self.class}:#{self.id}:#{name}", klass)
           end
         end
         
+        def ids
+          Tractor.redis.smembers "#{self}:all"
+        end
+        
+        def count
+          ids.size
+        end
+        
         def all
-          ids = Tractor.redis.smembers("#{self}:all")
           ids.inject([]){ |a, id| a << find_by_id(id); a }
         end
         
