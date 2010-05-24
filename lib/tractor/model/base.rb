@@ -20,8 +20,6 @@ module Tractor
   end
   
   class Set
-    include Enumerable
-    
     attr_accessor :key, :klass
 
     def initialize(key, klass)
@@ -43,7 +41,6 @@ module Tractor
   end
   
   class Index
-    include Enumerable
     attr_reader :klass, :name, :value
     
     def initialize(klass, name, value)
