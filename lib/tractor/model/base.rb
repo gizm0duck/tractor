@@ -88,12 +88,14 @@ module Tractor
         Tractor.redis["#{self.class}:#{self.id}"] = Marshal.dump(self)
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
+        add_to_associations
         
         return self
       end
       
       def destroy
         delete_from_indices(attribute_store)
+        remove_from_associations
         Tractor.redis.srem("#{self.class}:all", self.id)
         Tractor.redis.del "#{self.class}:#{self.id}"
       end
@@ -103,6 +105,14 @@ module Tractor
         delete_from_indices(attributes)
         attributes.each{ |k,v| self.send("#{k}=", v) }
         save
+      end
+      
+      def remove_from_associations
+        
+      end
+      
+      def add_to_associations
+        
       end
       
       def add_to_indices
@@ -183,6 +193,7 @@ module Tractor
           attributes[name] = options
           setter(name, options[:type])
           getter(name, options[:type])
+          index(name) if options[:index]
         end
         
         def index(name)
@@ -190,6 +201,8 @@ module Tractor
         end
         
         def association(name, klass)
+          # Global registry should be maintained of what classes maintain an association of these objects
+          
           associations[name] = name
           
           define_method(name) do

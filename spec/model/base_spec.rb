@@ -7,13 +7,14 @@ describe Tractor::Model::Base do
       attribute :id
       attribute :name
       attribute :wins_loses
+      attribute :game_id
     end
     
     class Game < Tractor::Model::Base
       attribute :id
       attribute :board
       attribute :flying_object
-      attribute :score, :type => :integer
+      attribute :score, :type => :integer, :index => true
       
       association :players, Player
     end
@@ -53,6 +54,18 @@ describe Tractor::Model::Base do
         game.score.should be_a(Fixnum)
       end
     end
+    
+    describe "when attribute is an index" do
+      before do
+        class Zombo < Tractor::Model::Base
+          attribute :anything, :index => true
+        end
+      end
+      
+      it "returns creates an index for the attribute" do
+        Zombo.indices.should == [:anything]
+      end
+    end
   end
     
   describe "#association" do
@@ -82,6 +95,12 @@ describe Tractor::Model::Base do
       game.players.push player1
       game.players.ids.should == [player1.id]
     end
+    
+    it "automatically adds items to association when they are created" # do
+     #      game2 = Game.create({ :id => "g2" })
+     #      Player.new({ :id => "p1", :name => "delicious", :game_id => "g2" })
+     #      game2.players.ids.should == ["p1"]
+     #    end
     
     it "adds an all method for the association to return the items in it" do
       game.players.all.should == []
@@ -129,7 +148,7 @@ describe Tractor::Model::Base do
     
     it "allows different attributes to be specified for different child classes" do
       Game.attributes.size.should == 4
-      Player.attributes.size.should == 3
+      Player.attributes.size.should == 4
       
       Game.attributes.keys.should_not include(:name)
       Player.attributes.keys.should_not include(:flying_object)
