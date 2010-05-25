@@ -73,7 +73,6 @@ module Tractor
       def initialize(attributes={})
         @attribute_store = {}
         @association_store = {}
-        
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -109,7 +108,12 @@ module Tractor
       end
       
       def add_to_associations
-        
+        self.class.associations.each do |key, value|
+          foreign_key_value = self.send(value[:foreign_key])
+          
+          return unless foreign_key_value
+          value[:foreign_klass].find_by_id(foreign_key_value).send(key).push(self)
+        end
       end
       
       def add_to_indices
@@ -189,10 +193,10 @@ module Tractor
           indices << name unless indices.include?(name)
         end
         
-        def association(name, klass)
+        def association(name, klass, foreign_key)
           # Global registry should be maintained of what classes maintain an association of these objects
           
-          associations[name] = name
+          klass.associations[name] = {:foreign_key => foreign_key, :klass => klass, :foreign_klass => self}
           
           define_method(name) do
             @association_store[name] = Association.new("#{self.class}:#{self.id}:#{name}", klass)

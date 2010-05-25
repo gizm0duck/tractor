@@ -16,8 +16,13 @@ describe Tractor::Model::Base do
       attribute :flying_object
       attribute :score, :type => :integer, :index => true
       
-      association :players, Player
+      # association :players, Player # player has a game_id
+      association :players, Player, :game_id 
     end
+  end
+  
+  after do
+    Tractor.redis.flushdb
   end
   
   describe ".attribute" do
@@ -81,8 +86,8 @@ describe Tractor::Model::Base do
       player2.save
     end
     
-    it "adds a set with the given name to the instance" do # "Monkey:a1a:SET_NAME"
-      Game.associations.keys.should include(:players)
+    it "adds a method with the given name to the instance" do # "Monkey:a1a:SET_NAME"
+      game.players.should be_a(Tractor::Association)
     end
     
     it "adds a push method for the set on an instance of the class" do
@@ -96,16 +101,18 @@ describe Tractor::Model::Base do
       game.players.ids.should == [player1.id]
     end
     
-    it "automatically adds items to association when they are created" # do
-     #      game2 = Game.create({ :id => "g2" })
-     #      Player.new({ :id => "p1", :name => "delicious", :game_id => "g2" })
-     #      game2.players.ids.should == ["p1"]
-     #    end
+    it "automatically adds items to association when they are created" do
+      bocci_ball = Game.create({ :id => "bocci_ball" })
+      puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })
+      bocci_ball.players.ids.should == ["tobias"]
+    end
     
     it "adds an all method for the association to return the items in it" do
       game.players.all.should == []
       game.players.push player1
       game.players.push player2
+      
       player1_from_game = game.players.all[0]
       player2_from_game = game.players.all[1]
       
@@ -115,13 +122,13 @@ describe Tractor::Model::Base do
       player2_from_game.id.should == player2.id
     end
     
-    it "requires the object being added to have been saved to the database before adding it to the set"
+    it "requires the object being added to have been saved to the database before adding it to the association"
   end
   
   describe ".associations" do
-    it "returns all association that have been added to this class" do
-      Game.associations.keys.should == [:players]
-    end
+    # it "returns all association that have been added to this class" do
+    #   Game.associations.keys.should == [:players]
+    # end
   end
   
   describe ".indices" do
