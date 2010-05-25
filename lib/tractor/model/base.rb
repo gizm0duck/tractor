@@ -159,16 +159,7 @@ module Tractor
         # use method missing to do craziness, or define a find_by on each index (BETTER)
         def find_by_attribute(name, value)
           raise "No index on '#{name}'" unless indices.include?(name)
-
-          ids = ids_for_find(name, value)
-          ids.map do |id|
-            find_by_id(id)
-          end
-        end
-        
-        def ids_for_find(name, value)
-          values = Array(value)
-          Tractor.redis.sunion(*values.map{|v| Index.key_for(self, name, v) })
+          find({name => value})
         end
 
         def find(options = {})

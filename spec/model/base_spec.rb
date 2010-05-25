@@ -244,23 +244,6 @@ describe Tractor::Model::Base do
     end
   end
   
-  describe ".ids_for_find" do
-    before do
-      Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
-      Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
-    end
-    
-    it "returns all the ids for a given attribute and value on a class" do
-      Sammich.ids_for_find(:weight, "medium").should == ['s1', 's2']
-    end
-    
-    it "returns all ids for a given attribute with multiple possible values" do
-      Sammich.create({ :id => 's3', :weight => "heavy", :product => "Meat & More Sammich" })
-      Sammich.ids_for_find(:weight, ["medium", "heavy"]).should == ['s1', 's2', 's3']
-    end
-  end
-  
   describe "#create" do
     it "allows you to specify which attributes should be unique"
 
