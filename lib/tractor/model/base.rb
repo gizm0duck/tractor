@@ -173,13 +173,19 @@ module Tractor
 
         def find(options = {})
           return [] if options.empty?
+          unions = []
           sets = options.map do |name, value|
-            Index.key_for(self, name, value)
+            if value.is_a?(Array)
+              unions << union_name = "#{value}-#{Time.now.to_f}"
+              Tractor.redis.sunionstore(union_name, *value.map{|v| Index.key_for(self, name, v) })
+              union_name
+            else
+              Index.key_for(self, name, value)
+            end
           end
           ids = Tractor.redis.sinter(*sets)
-          ids.map do |id|
-            find_by_id(id)
-          end
+          Tractor.redis.del(unions.join(","))
+          ids.map {|id| find_by_id(id) }
         end
         
         def attribute(name, options={})

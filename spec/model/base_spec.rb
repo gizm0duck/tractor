@@ -374,8 +374,9 @@ describe Tractor::Model::Base do
     attr_reader :cheese, :balogna
     
     before do
-      @cheese = Sammich.create({ :id => '1', :weight => "medium", :product => "Cheese Sammich" })
-      @balogna = Sammich.create({ :id => '2', :weight => "medium", :product => "Balogna Sammich" })
+      @cheese   = Sammich.create({ :id => '1', :weight => "medium", :product => "Cheese Sammich" })
+      @balogna  = Sammich.create({ :id => '2', :weight => "medium", :product => "Balogna Sammich" })
+      @meat   = Sammich.create({ :id => '3', :weight => "heavy", :product => "Meat & More Sammich" })
     end
     
     context "when searching on 1 attribute" do
@@ -404,6 +405,10 @@ describe Tractor::Model::Base do
     
     it "returns empty array if nothing matches the given options" do
       Sammich.find( {:weight => "light" } ).should == []
+    end
+    
+    it "returns all matching objects if multiple values are given for an attribute" do
+      Sammich.find( {:weight => ["medium", "heavy"]} ).map(&:id).sort.should == ['1','2','3']
     end
   end
   
