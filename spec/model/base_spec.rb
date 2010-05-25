@@ -251,6 +251,11 @@ describe Tractor::Model::Base do
     it "returns all the ids for a given attribute and value on a class" do
       Sammich.ids_for_find(:weight, "medium").should == ['s1', 's2']
     end
+    
+    it "returns all ids for a given attribute with multiple possible values" do
+      Sammich.create({ :id => 's3', :weight => "heavy", :product => "Meat & More Sammich" })
+      Sammich.ids_for_find(:weight, ["medium", "heavy"]).should == ['s1', 's2', 's3']
+    end
   end
   
   describe "#create" do
