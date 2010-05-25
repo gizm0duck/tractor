@@ -3,21 +3,24 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 describe Tractor::Model::Base do
   attr_reader :redis
   before do
-    class Player < Tractor::Model::Base
-      attribute :id
-      attribute :name
-      attribute :wins_loses
-      attribute :game_id
-    end
+    module Tractor
+      module Model
+        class Player < Base
+          attribute :id
+          attribute :name
+          attribute :wins_loses
+          attribute :game_id
+        end
     
-    class Game < Tractor::Model::Base
-      attribute :id
-      attribute :board
-      attribute :flying_object
-      attribute :score, :type => :integer, :index => true
+        class Game < Tractor::Model::Base
+          attribute :id
+          attribute :board
+          attribute :flying_object
+          attribute :score, :type => :integer, :index => true
       
-      # association :players, Player # player has a game_id
-      association :players, Player, :game_id 
+          association :players, Tractor::Model::Player
+        end
+      end
     end
   end
   
@@ -27,20 +30,20 @@ describe Tractor::Model::Base do
   
   describe ".attribute" do
     it "inserts the values into the attributes class instance variable" do
-      Game.attributes.should include(:board)
+      Tractor::Model::Game.attributes.should include(:board)
     end
     
     it "allows you to specify what type the value should be when it comes out of the tractor" do
-      Game.attributes[:score][:type].should == :integer
+      Tractor::Model::Game.attributes[:score][:type].should == :integer
     end
     
     it "creates a set method for each attribute" do
-      game = Game.new(:board => "fancy")
+      game = Tractor::Model::Game.new(:board => "fancy")
       game.send(:attribute_store)[:board].should == "fancy"
     end
     
     it "creates a get method for each attribute" do
-      game = Game.new(:board => "schmancy")
+      game = Tractor::Model::Game.new(:board => "schmancy")
       game.board.should == "schmancy"
     end
     
@@ -54,7 +57,7 @@ describe Tractor::Model::Base do
     
     describe "when attribute is a integer" do
       it "returns an integer" do
-        game = Game.new(:score => 1222)
+        game = Tractor::Model::Game.new(:score => 1222)
         game.score.should == 1222
         game.score.should be_a(Fixnum)
       end
@@ -77,9 +80,9 @@ describe Tractor::Model::Base do
     attr_reader :game, :player1, :player2
     
     before do
-      @game     = Game.new({ :id => 'g1' })
-      @player1  = Player.new({ :id => 'p1', :name => "delicious" })
-      @player2  = Player.new({ :id => 'p2', :name => "gross" })
+      @game     = Tractor::Model::Game.new({ :id => 'g1' })
+      @player1  = Tractor::Model::Player.new({ :id => 'p1', :name => "delicious" })
+      @player2  = Tractor::Model::Player.new({ :id => 'p2', :name => "gross" })
       
       game.save
       player1.save
@@ -92,7 +95,7 @@ describe Tractor::Model::Base do
     
     it "adds a push method for the set on an instance of the class" do
       game.players.push player1
-      redis.smembers('Game:g1:players').should == ['p1']
+      redis.smembers('Tractor::Model::Game:g1:players').should == ['p1']
     end
     
     it "adds an ids method for the set that returns all ids in it" do
@@ -102,8 +105,8 @@ describe Tractor::Model::Base do
     end
     
     it "automatically adds items to association when they are created" do
-      bocci_ball = Game.create({ :id => "bocci_ball" })
-      Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })
+      bocci_ball = Tractor::Model::Game.create({ :id => "bocci_ball" })
+      Tractor::Model::Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })
       bocci_ball.players.ids.should == ["tobias"]
     end
     
@@ -144,7 +147,7 @@ describe Tractor::Model::Base do
     attr_reader :sorted_attributes
     
     before do
-      @sorted_attributes = Game.attributes.keys.sort{|x,y| x.to_s <=> y.to_s}  
+      @sorted_attributes = Tractor::Model::Game.attributes.keys.sort{|x,y| x.to_s <=> y.to_s}  
     end
   
     it "returns all attributes that have been added to this class" do
@@ -153,17 +156,17 @@ describe Tractor::Model::Base do
     end
     
     it "allows different attributes to be specified for different child classes" do
-      Game.attributes.size.should == 4
-      Player.attributes.size.should == 4
+      Tractor::Model::Game.attributes.size.should == 4
+      Tractor::Model::Player.attributes.size.should == 4
       
-      Game.attributes.keys.should_not include(:name)
-      Player.attributes.keys.should_not include(:flying_object)
+      Tractor::Model::Game.attributes.keys.should_not include(:name)
+      Tractor::Model::Player.attributes.keys.should_not include(:flying_object)
     end
   end
   
   describe "#save" do
     it "raises if id is nil or empty" do
-      game = Game.new
+      game = Tractor::Model::Game.new
       game.id = nil
       lambda { game.save }.should raise_error("Probably wanna set an id")
       game.id = ''
@@ -171,22 +174,22 @@ describe Tractor::Model::Base do
     end
     
     it "should write attributes to redis" do
-      game = Game.new({:id => '1', :board => "large", :flying_object => "disc"})
+      game = Tractor::Model::Game.new({:id => '1', :board => "large", :flying_object => "disc"})
       game.save
       
-      redis["Game:1"].should_not be_nil
-      redis_game = Marshal.load(redis["Game:1"])
+      redis["Tractor::Model::Game:1"].should_not be_nil
+      redis_game = Marshal.load(redis["Tractor::Model::Game:1"])
       redis_game.id.should == "1"
       redis_game.board.should == "large"
       redis_game.flying_object.should == "disc"
     end
     
     it "appends the new object to the Game set" do
-      Game.all.size.should == 0
-      game = Game.new({ :id => '1', :board => "small" })
+      Tractor::Model::Game.all.size.should == 0
+      game = Tractor::Model::Game.new({ :id => '1', :board => "small" })
       game.save
       
-      Game.all.size.should == 1
+      Tractor::Model::Game.all.size.should == 1
     end
   end
     
@@ -219,12 +222,12 @@ describe Tractor::Model::Base do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Player.create({ :id => 'p1', :name => "delicious" })
+      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
     end
     
     it "returns all the ids for a given class" do
       Sammich.ids.should == ['s1', 's2']
-      Player.ids.should == ['p1']
+      Tractor::Model::Player.ids.should == ['p1']
     end
   end
   
@@ -232,12 +235,12 @@ describe Tractor::Model::Base do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Player.create({ :id => 'p1', :name => "delicious" })
+      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
     end
     
     it "returns the count of all items of a given class" do
       Sammich.count.should == 2
-      Player.count.should == 1
+      Tractor::Model::Player.count.should == 1
     end
   end
   
@@ -245,7 +248,7 @@ describe Tractor::Model::Base do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Player.create({ :id => 'p1', :name => "delicious" })
+      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
     end
     
     it "returns all the ids for a given attribute and value on a class" do

@@ -194,9 +194,9 @@ module Tractor
           indices << name unless indices.include?(name)
         end
         
-        def association(name, klass, foreign_key)
-          # Global registry should be maintained of what classes maintain an association of these objects
-          
+        # make an assumption about the foreign_key... probably bad :)
+        def association(name, klass)
+          foreign_key = "#{self.to_s.gsub(/^.*::/, '').downcase}_id"
           klass.associations[name] = {:foreign_key => foreign_key, :klass => klass, :foreign_klass => self}
           
           define_method(name) do
