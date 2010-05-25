@@ -167,7 +167,8 @@ module Tractor
         end
         
         def ids_for_find(name, value)
-          Tractor.redis.smembers(Index.key_for(self, name, value))
+          values = Array(value)
+          Tractor.redis.sunion(values.map{|v| Index.key_for(self, name, v) })
         end
 
         def find(options = {})

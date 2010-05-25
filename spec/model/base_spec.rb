@@ -103,7 +103,6 @@ describe Tractor::Model::Base do
     
     it "automatically adds items to association when they are created" do
       bocci_ball = Game.create({ :id => "bocci_ball" })
-      puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
       Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })
       bocci_ball.players.ids.should == ["tobias"]
     end
