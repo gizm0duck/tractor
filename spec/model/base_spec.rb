@@ -127,12 +127,6 @@ describe Tractor::Model::Base do
     it "requires the object being added to have been saved to the database before adding it to the association"
   end
   
-  describe ".associations" do
-    # it "returns all association that have been added to this class" do
-    #   Game.associations.keys.should == [:players]
-    # end
-  end
-  
   describe ".indices" do
     it "returns all indices on a class" do
       Sammich.indices.should == [:product, :weight]
@@ -350,7 +344,14 @@ describe Tractor::Model::Base do
       Sammich.find({ :weight => "medium" }).size.should == 1
     end
     
-    it "removes the id from all of the associations that it may be in"
+    it "removes the id from all of the associations that it may be in" do
+      bocci_ball = Tractor::Model::Game.create({ :id => "bocci_ball" })
+      tobias = Tractor::Model::Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })
+      bocci_ball.players.ids.should == ["tobias"]
+      tobias.destroy
+      
+      bocci_ball.players.ids.should == []
+    end
   end
   
   describe ".find" do

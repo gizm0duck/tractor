@@ -31,6 +31,10 @@ module Tractor
       Tractor.redis.sadd(key, val.id)
     end
     
+    def delete(id)
+      Tractor.redis.srem(key, id)
+    end
+    
     def ids
       Tractor.redis.smembers(key)
     end
@@ -104,7 +108,11 @@ module Tractor
       end
       
       def remove_from_associations
-        
+        self.class.associations.each do |key, value|
+          foreign_key_value = self.send(value[:foreign_key])
+          return unless foreign_key_value
+          value[:foreign_klass].find_by_id(foreign_key_value).send(key).delete(self.id)
+        end
       end
       
       def add_to_associations
