@@ -174,7 +174,7 @@ module Tractor
           return [] if options.empty?
           unions = []
           sets = options.map do |name, value|
-            if value.is_a?(Array)
+            if value.is_a?(Array) && value.any?
               unions << union_name = "#{value}-#{Time.now.to_f}"
               Tractor.redis.sunionstore(union_name, *value.map{|v| Index.key_for(self, name, v) })
               union_name
