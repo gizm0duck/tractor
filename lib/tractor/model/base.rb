@@ -107,23 +107,18 @@ module Tractor
         save
       end
       
-      def remove_from_associations
-        self.class.associations.each do |key, value|
-          foreign_key_value = self.send(value[:foreign_key])
-          return unless foreign_key_value
-          value[:foreign_klass].find_by_id(foreign_key_value).send(key).delete(self.id)
-        end
-      end
-      
       def add_to_associations
-        self.class.associations.each do |key, value|
-          foreign_key_value = self.send(value[:foreign_key])
-          
-          return unless foreign_key_value
-          value[:foreign_klass].find_by_id(foreign_key_value).send(key).push(self)
+        for_each_associated_foreign_instance do |foreign_instance|
+          foreign_instance.push(self)
         end
       end
-      
+
+      def remove_from_associations
+        for_each_associated_foreign_instance do |foreign_instance|
+          foreign_instance.delete(self.id)
+        end
+      end
+
       def add_to_indices
         self.class.indices.each do |name|
           index = Index.new(self.class, name, send(name))
@@ -201,9 +196,8 @@ module Tractor
         
         # make an assumption about the foreign_key... probably bad :)
         def association(name, klass)
-          foreign_key = "#{self.to_s.gsub(/^.*::/, '').downcase}_id"
-          klass.associations[name] = {:foreign_key => foreign_key, :klass => klass, :foreign_klass => self}
-          
+          foreign_key_name = "#{self.to_s.gsub(/^.*::/, '').downcase}_id"
+          klass.associations[self.name] = {:foreign_key_name => foreign_key_name, :set_name => name}
           define_method(name) do
             @association_store[name] = Association.new("#{self.class}:#{self.id}:#{name}", klass)
           end
@@ -263,6 +257,16 @@ module Tractor
       private 
       
         attr_reader :attribute_store, :association_store
+
+        def for_each_associated_foreign_instance
+          self.class.associations.each do |association_owner_class_name, association_attributes|
+            foreign_klass = Object.module_eval(association_owner_class_name)
+            foreign_key = self.send(association_attributes[:foreign_key_name])
+            foreign_instance = foreign_klass.find_by_id(foreign_key)
+            yield(foreign_instance.send(association_attributes[:set_name]))
+          end
+        end
+
     end
   end
 end

@@ -81,8 +81,9 @@ describe Tractor::Model::Base do
     
     before do
       @game     = Tractor::Model::Game.new({ :id => 'g1' })
-      @player1  = Tractor::Model::Player.new({ :id => 'p1', :name => "delicious" })
-      @player2  = Tractor::Model::Player.new({ :id => 'p2', :name => "gross" })
+      Tractor::Model::Game.create({ :id => 'g2' })
+      @player1  = Tractor::Model::Player.new({ :id => 'p1', :name => "delicious", :game_id => "g1" })
+      @player2  = Tractor::Model::Player.new({ :id => 'p2', :name => "gross", :game_id => "g2" })
       
       game.save
       player1.save
@@ -94,13 +95,11 @@ describe Tractor::Model::Base do
     end
     
     it "adds a push method for the set on an instance of the class" do
-      game.players.push player1
-      redis.smembers('Tractor::Model::Game:g1:players').should == ['p1']
+      game.players.push player2
+      redis.smembers('Tractor::Model::Game:g1:players').should == ['p1', 'p2']
     end
     
     it "adds an ids method for the set that returns all ids in it" do
-      game.players.ids.should be_empty
-      game.players.push player1
       game.players.ids.should == [player1.id]
     end
     
@@ -111,17 +110,9 @@ describe Tractor::Model::Base do
     end
     
     it "adds an all method for the association to return the items in it" do
-      game.players.all.should == []
-      game.players.push player1
-      game.players.push player2
-      
       player1_from_game = game.players.all[0]
-      player2_from_game = game.players.all[1]
-      
       player1_from_game.name.should == player1.name
       player1_from_game.id.should == player1.id
-      player2_from_game.name.should == player2.name
-      player2_from_game.id.should == player2.id
     end
     
     it "requires the object being added to have been saved to the database before adding it to the association"
@@ -216,12 +207,10 @@ describe Tractor::Model::Base do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
     end
     
     it "returns all the ids for a given class" do
       Sammich.ids.should == ['s1', 's2']
-      Tractor::Model::Player.ids.should == ['p1']
     end
   end
   
@@ -229,12 +218,10 @@ describe Tractor::Model::Base do
     before do
       Sammich.create({ :id => 's1', :weight => "medium", :product => "Turkey Avocado" })
       Sammich.create({ :id => 's2', :weight => "medium", :product => "Reuben Sammich" })
-      Tractor::Model::Player.create({ :id => 'p1', :name => "delicious" })
     end
     
     it "returns the count of all items of a given class" do
       Sammich.count.should == 2
-      Tractor::Model::Player.count.should == 1
     end
   end
   
