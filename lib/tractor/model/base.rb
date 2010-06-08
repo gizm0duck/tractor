@@ -7,11 +7,7 @@ module Tractor
     
     # important options are port, host and db
     def connectdb(options={})
-      if options.nil?
-        @redis = Redis.new(options)
-      else
-        @redis = Redis.new(:db => 1)
-      end
+      @redis = options.nil? ? Redis.new(:db => 1) : Redis.new(options)
     end
 
     def flushdb
