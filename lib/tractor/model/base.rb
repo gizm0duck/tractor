@@ -1,4 +1,5 @@
 require 'base64'
+require 'yajl'
 
 module Tractor
   
@@ -50,7 +51,7 @@ module Tractor
     end
     
     def insert(id)
-      Tractor.redis.sadd(key, id) unless Tractor.redis.smembers(key).include?(id)
+      Tractor.redis.sadd(key, id) unless Tractor.redis.sismember(key, id)
     end
     
     def delete(id)
@@ -73,6 +74,7 @@ module Tractor
       def initialize(attributes={})
         @attribute_store = {}
         @association_store = {}
+        @encoder = Yajl::Encoder.new
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -80,8 +82,7 @@ module Tractor
       
       def save
         raise "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
-        
-        Tractor.redis["#{self.class}:#{self.id}"] = Marshal.dump(self)
+        Tractor.redis["#{self.class}:#{self.id}"] = @encoder.encode(self.send(:attribute_store))
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         add_to_associations
@@ -147,12 +148,16 @@ module Tractor
           m.save
           m
         end
+        
+        def exists?(id)
+          Tractor.redis.sismember("#{self}:all", id)
+        end
 
         def find_by_id(id)
-          redis_obj = Tractor.redis["#{self}:#{id}"]
-          return nil if redis_obj.nil?
-          
-          Marshal.load(redis_obj)
+          obj_data = Tractor.redis["#{self}:#{id}"]
+          return nil if obj_data.nil?
+          parser = Yajl::Parser.new
+          new(parser.parse(obj_data))
         end
 
         # use method missing to do craziness, or define a find_by on each index (BETTER)

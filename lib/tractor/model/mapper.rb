@@ -12,7 +12,7 @@ module Tractor
         end
         
         def representation_for(server_instance)
-          if find_from_instance(server_instance)
+          if exists?(server_instance)
             update_from_instance(server_instance)
           else
             create_from_instance(server_instance)
