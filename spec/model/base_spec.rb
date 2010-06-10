@@ -163,10 +163,11 @@ describe Tractor::Model::Base do
       game.save
       
       redis["Tractor::Model::Game:1"].should_not be_nil
-      redis_game = Marshal.load(redis["Tractor::Model::Game:1"])
-      redis_game.id.should == "1"
-      redis_game.board.should == "large"
-      redis_game.flying_object.should == "disc"
+      parser = Yajl::Parser.new
+      redis_game = parser.parse(redis["Tractor::Model::Game:1"])
+      redis_game["id"].should == "1"
+      redis_game["board"].should == "large"
+      redis_game["flying_object"].should == "disc"
     end
     
     it "appends the new object to the Game set" do
@@ -237,10 +238,10 @@ describe Tractor::Model::Base do
     
     it "should write attributes to redis" do
       sammich = Sammich.create({ :id => '1', :product => "Veggie Sammich" })
-      
-      redis_sammich = Marshal.load(redis["Sammich:1"])
-      redis_sammich.id.should == "1"
-      redis_sammich.product.should == "Veggie Sammich"
+      parser = Yajl::Parser.new
+      redis_sammich = parser.parse(redis["Sammich:1"])
+      redis_sammich["id"].should == "1"
+      redis_sammich["product"].should == "Veggie Sammich"
     end
     
     it "populates all the indices that are specified on the class" do
@@ -255,6 +256,17 @@ describe Tractor::Model::Base do
     it "returns the instance that has been created" do
       sammich = Sammich.create({ :id => '1', :weight => "heavy", :product => "Tuna Melt" })
       sammich.weight.should == "heavy"
+    end
+  end
+  
+  describe ".exists?" do
+    it "returns true if the object with the given id exists" do
+      MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
+      MonkeyClient.exists?('a1a').should be_true
+    end
+    
+    it "returns false if the object with the given id does not exist" do
+      MonkeyClient.exists?('a1a').should be_false
     end
   end
   
