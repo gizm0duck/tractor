@@ -10,6 +10,8 @@ begin
     gem.email = "shanewolf@gmail.com"
     gem.homepage = "http://github.com/gizm0duck/tractor"
     gem.authors = ["Shane Wolf"]
+    gem.add_dependency "redis", ">=2.0.0"
+    gem.add_dependency "yajl-ruby", ">=0.7.6"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new

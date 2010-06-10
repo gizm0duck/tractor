@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Shane Wolf"]
-  s.date = %q{2010-06-09}
+  s.date = %q{2010-06-10}
   s.description = %q{Very simple object mappings for ruby objects}
   s.email = %q{shanewolf@gmail.com}
   s.extra_rdoc_files = [
@@ -50,9 +50,15 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<redis>, [">= 2.0"])
+      s.add_runtime_dependency(%q<yajl-ruby>, [">= 0"])
     else
+      s.add_dependency(%q<redis>, [">= 2.0"])
+      s.add_dependency(%q<yajl-ruby>, [">= 0"])
     end
   else
+    s.add_dependency(%q<redis>, [">= 2.0"])
+    s.add_dependency(%q<yajl-ruby>, [">= 0"])
   end
 end
 
