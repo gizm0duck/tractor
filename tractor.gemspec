@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
      "spec/spec.opts",
      "spec/spec_helper.rb",
      "spec/tractor_spec.rb",
+     "tractor-0.4.3.gem",
      "tractor.gemspec"
   ]
   s.homepage = %q{http://github.com/gizm0duck/tractor}
