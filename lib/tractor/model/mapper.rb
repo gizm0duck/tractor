@@ -49,7 +49,7 @@ module Tractor
           
           if hydrate_only
             ensure_dependencies_met(server_instance, hydrate_only, &block)
-            block.call({self.to_s => attributes})
+            block.call([self.to_s, attributes])
           else
             ensure_dependencies_met(server_instance, hydrate_only)
             yield attributes
