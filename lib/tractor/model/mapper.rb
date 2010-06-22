@@ -25,7 +25,7 @@ module Tractor
         
         def create_from_instance(server_instance)
           hydrate_attributes(server_instance) do |attributes|
-            self.create(attributes)
+            return self.create(attributes)
           end
         end
         
@@ -34,7 +34,7 @@ module Tractor
           raise "Cannot update an object that doesn't exist." unless existing_record
           
           hydrate_attributes(server_instance) do |attributes|
-            existing_record.update(attributes)
+            return existing_record.update(attributes)
           end
         end
         
@@ -44,10 +44,17 @@ module Tractor
           obj_to_destroy.destroy
         end
         
-        def hydrate_attributes(server_instance)
+        def hydrate_attributes(server_instance, hydrate_only=false, &block)
           attributes = attribute_mapper(server_instance)
-          ensure_dependencies_met(server_instance)
-          yield attributes
+          
+          if hydrate_only
+            ensure_dependencies_met(server_instance, hydrate_only, &block)
+            block.call({self.to_s => attributes})
+          else
+            ensure_dependencies_met(server_instance, hydrate_only)
+            yield attributes
+          end
+          return attributes
         end
         
         def attribute_mapper(server_instance)
@@ -70,15 +77,18 @@ module Tractor
           return true
         end
         
-        def ensure_dependencies_met(server_instance)          
-          return if dependencies_met?(server_instance)
-
+        def ensure_dependencies_met(server_instance, hydrate_only=false, &block)
+          return if !hydrate_only && dependencies_met?(server_instance)
           dependencies.each do |klass, options|
-            if klass.find_by_id(server_instance.send(options[:key_name])).nil?
+            if hydrate_only || klass.find_by_id(server_instance.send(options[:key_name])).nil?
               server_instances = server_instance.send(options[:method_name])
               server_instances = server_instances.is_a?(Array) ? server_instances : [server_instances]
               server_instances.each do |obj|
-                klass.create_from_instance(obj)
+                if hydrate_only
+                  klass.hydrate_attributes(obj)
+                else
+                  klass.create_from_instance(obj)
+                end
               end
             end
           end
