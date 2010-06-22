@@ -46,7 +46,6 @@ module Tractor
         
         def hydrate_attributes(server_instance, hydrate_only=false, &block)
           attributes = attribute_mapper(server_instance)
-          
           if hydrate_only
             ensure_dependencies_met(server_instance, hydrate_only, &block)
             block.call([self.to_s, attributes])
@@ -78,6 +77,7 @@ module Tractor
         end
         
         def ensure_dependencies_met(server_instance, hydrate_only=false, &block)
+          
           return if !hydrate_only && dependencies_met?(server_instance)
           dependencies.each do |klass, options|
             if hydrate_only || klass.find_by_id(server_instance.send(options[:key_name])).nil?
@@ -85,7 +85,7 @@ module Tractor
               server_instances = server_instances.is_a?(Array) ? server_instances : [server_instances]
               server_instances.each do |obj|
                 if hydrate_only
-                  klass.hydrate_attributes(obj)
+                  klass.hydrate_attributes(obj, hydrate_only, &block)
                 else
                   klass.create_from_instance(obj)
                 end
