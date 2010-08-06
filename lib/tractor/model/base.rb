@@ -37,7 +37,7 @@ module Tractor
     end
     
     def all
-      ids.inject([]){ |o, id| o << klass.find_by_id(id); o }
+      ids.inject([]){|o, id| o << klass.find_by_id(id); o }
     end
   end
   
@@ -100,7 +100,7 @@ module Tractor
       def update(attributes = {})
         attributes.delete(:id)
         delete_from_indices(attributes)
-        attributes.each{ |k,v| self.send("#{k}=", v) }
+        attributes.each{|k,v| self.send("#{k}=", v) }
         save
       end
       
@@ -213,7 +213,7 @@ module Tractor
         end
         
         def all
-          ids.inject([]){ |a, id| a << find_by_id(id); a }
+          ids.inject([]){|a, id| a << find_by_id(id); a }
         end
         
         ###
