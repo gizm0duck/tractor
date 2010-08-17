@@ -89,7 +89,23 @@ describe Tractor::Model::Mapper do
       redis_monkey.evil.should == true
       redis_monkey.id.should == "a1a"
     end
+    
+    context "when the instance already exists in it's tractor representation" do
+      attr_reader :monkey, :tractor_monkey
+      before do
+        @monkey = Monkey.new("Dec. 3, 1981", true, 'a1a')
+        @tractor_monkey = MonkeyClient.create_from_instance(monkey)
+      end
+      
+      it "returns the instance from the tractor representation" do
+        result = MonkeyClient.create_from_instance(monkey)
+        result.id.should        == tractor_monkey.id
+        result.birthday.should  == tractor_monkey.birthday
+        result.evil.should      == tractor_monkey.evil
+      end
+    end
   end
+  
   
   describe "update_from_instance" do
     it "ensures dependencies are met"

@@ -25,7 +25,11 @@ module Tractor
         
         def create_from_instance(server_instance)
           hydrate_attributes(server_instance) do |attributes|
-            return self.create(attributes)
+            begin
+              return self.create(attributes)
+            rescue DuplicateKeyError
+              return find_from_instance(server_instance)
+            end
           end
         end
         
