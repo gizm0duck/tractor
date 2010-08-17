@@ -153,9 +153,9 @@ describe Tractor::Model::Base do
     it "raises if id is nil or empty" do
       game = Tractor::Model::Game.new
       game.id = nil
-      lambda { game.save }.should raise_error("Probably wanna set an id")
+      lambda { game.save }.should raise_error(Tractor::MissingIdError, "Probably wanna set an id")
       game.id = ''
-      lambda { game.save }.should raise_error("Probably wanna set an id")
+      lambda { game.save }.should raise_error(Tractor::MissingIdError, "Probably wanna set an id")
     end
     
     it "should write attributes to redis" do
@@ -233,7 +233,7 @@ describe Tractor::Model::Base do
       MonkeyClient.create({ :id => 'a1a', :evil => true, :birthday => "Dec 3" })
       lambda do
         MonkeyClient.create({ :id => 'a1a', :evil => false, :birthday => "Jan 4" })
-      end.should raise_error("Duplicate value for MonkeyClient 'id'")
+      end.should raise_error(Tractor::DuplicateKeyError, "Duplicate value for MonkeyClient 'id'")
     end
     
     it "should write attributes to redis" do
@@ -399,7 +399,7 @@ describe Tractor::Model::Base do
     it "raises if index does not exist for given key" do
       lambda do
         Sammich.find_by_attribute(:expensive, true)
-      end.should raise_error("No index on 'expensive'")
+      end.should raise_error(Tractor::MissingIndexError, "No index on 'expensive'")
     end
     
     it "takes an index name and value and finds all matching objects" do

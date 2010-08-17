@@ -3,6 +3,10 @@ require 'yajl'
 
 module Tractor
   
+  class MissingIdError < StandardError; end
+  class DuplicateKeyError < StandardError; end
+  class MissingIndexError < StandardError; end
+  
   class << self
     attr_reader :redis
     
@@ -81,7 +85,7 @@ module Tractor
       end
       
       def save
-        raise "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
+        raise MissingIdError, "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
         Tractor.redis["#{self.class}:#{self.id}"] = @encoder.encode(self.send(:attribute_store))
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
@@ -143,7 +147,7 @@ module Tractor
         attr_reader :attributes, :associations, :indices
         
         def create(attributes={})
-          raise "Duplicate value for #{self} 'id'" if Tractor.redis.sismember("#{self}:all", attributes[:id])
+          raise DuplicateKeyError, "Duplicate value for #{self} 'id'" if Tractor.redis.sismember("#{self}:all", attributes[:id])
           m = new(attributes)
           m.save
           m
@@ -162,7 +166,7 @@ module Tractor
 
         # use method missing to do craziness, or define a find_by on each index (BETTER)
         def find_by_attribute(name, value)
-          raise "No index on '#{name}'" unless indices.include?(name)
+          raise MissingIndexError, "No index on '#{name}'" unless indices.include?(name)
           find({name => value})
         end
 
