@@ -37,7 +37,7 @@ module Tractor
     end
     
     def ids
-      Tractor.redis.smembers(key)
+      Tractor.redis.smembers(key) || []
     end
     
     def all
@@ -182,7 +182,7 @@ module Tractor
               Index.key_for(self, name, value)
             end
           end
-          ids = Tractor.redis.sinter(*sets)
+          ids = Tractor.redis.sinter(*sets) || []
           Tractor.redis.del(unions.join(","))
           ids.map {|id| find_by_id(id) }
         end
@@ -209,7 +209,7 @@ module Tractor
         end
         
         def ids
-          Tractor.redis.smembers "#{self}:all"
+          Tractor.redis.smembers("#{self}:all") || []
         end
         
         def count
