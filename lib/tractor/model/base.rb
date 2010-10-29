@@ -1,5 +1,4 @@
 require 'base64'
-require 'yajl'
 
 module Tractor
   
@@ -78,7 +77,6 @@ module Tractor
       def initialize(attributes={})
         @attribute_store = {}
         @association_store = {}
-        @encoder = Yajl::Encoder.new
         attributes.each do |k,v|
           send("#{k}=", v)
         end
@@ -86,7 +84,8 @@ module Tractor
       
       def save
         raise MissingIdError, "Probably wanna set an id" if self.id.nil? || self.id.to_s.empty?
-        Tractor.redis["#{self.class}:#{self.id}"] = @encoder.encode(self.send(:attribute_store))
+
+        Tractor.redis.mapped_hmset("#{self.class}:#{self.id}", self.send(:attribute_store))
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         add_to_associations
@@ -158,10 +157,9 @@ module Tractor
         end
 
         def find_by_id(id)
-          obj_data = Tractor.redis["#{self}:#{id}"]
-          return nil if obj_data.nil?
-          parser = Yajl::Parser.new
-          new(parser.parse(obj_data))
+          obj_data = Tractor.redis.mapped_hmget("#{self}:#{id}", *attributes.keys)
+          return nil if obj_data.reject{|k,v| v.nil?}.empty?
+          new(obj_data)
         end
 
         # use method missing to do craziness, or define a find_by on each index (BETTER)

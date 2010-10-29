@@ -162,12 +162,10 @@ describe Tractor::Model::Base do
       game = Tractor::Model::Game.new({:id => '1', :board => "large", :flying_object => "disc"})
       game.save
       
-      redis["Tractor::Model::Game:1"].should_not be_nil
-      parser = Yajl::Parser.new
-      redis_game = parser.parse(redis["Tractor::Model::Game:1"])
-      redis_game["id"].should == "1"
-      redis_game["board"].should == "large"
-      redis_game["flying_object"].should == "disc"
+      redis_game_attributes = Tractor.redis.mapped_hmget("Tractor::Model::Game:1", "id", "board", "flying_object")
+      redis_game_attributes["id"].should == "1"
+      redis_game_attributes["board"].should == "large"
+      redis_game_attributes["flying_object"].should == "disc"
     end
     
     it "appends the new object to the Game set" do
@@ -238,8 +236,7 @@ describe Tractor::Model::Base do
     
     it "should write attributes to redis" do
       sammich = Sammich.create({ :id => '1', :product => "Veggie Sammich" })
-      parser = Yajl::Parser.new
-      redis_sammich = parser.parse(redis["Sammich:1"])
+      redis_sammich = Tractor.redis.mapped_hmget("Sammich:1", "id", "product")
       redis_sammich["id"].should == "1"
       redis_sammich["product"].should == "Veggie Sammich"
     end
