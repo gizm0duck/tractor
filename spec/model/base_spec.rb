@@ -103,6 +103,10 @@ describe Tractor::Model::Base do
       game.players.ids.should == [player1.id]
     end
     
+    it "adds a count method for the set that returns the size of the association" do
+      game.players.count.should == 1
+    end
+    
     it "automatically adds items to association when they are created" do
       bocci_ball = Tractor::Model::Game.create({ :id => "bocci_ball" })
       Tractor::Model::Player.create({ :id => "tobias", :name => "deciduous", :game_id => "bocci_ball" })

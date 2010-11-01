@@ -39,6 +39,10 @@ module Tractor
       Tractor.redis.smembers(key) || []
     end
     
+    def count
+      ids.size
+    end
+    
     def all
       ids.inject([]){|o, id| o << klass.find_by_id(id); o }
     end
