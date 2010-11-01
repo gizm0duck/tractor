@@ -162,7 +162,7 @@ module Tractor
 
         def find_by_id(id)
           obj_data = Tractor.redis.mapped_hmget("#{self}:#{id}", *attributes.keys)
-          return nil if obj_data.reject{|k,v| v.nil?}.empty?
+          return nil if obj_data.values.compact.empty?
           new(obj_data)
         end
 

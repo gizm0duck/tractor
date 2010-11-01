@@ -26,6 +26,7 @@ Gem::Specification.new do |s|
      "lib/tractor.rb",
      "lib/tractor/model/base.rb",
      "lib/tractor/model/mapper.rb",
+     "performance/test.rb",
      "spec/model/base_spec.rb",
      "spec/model/mapper_spec.rb",
      "spec/spec.opts",
