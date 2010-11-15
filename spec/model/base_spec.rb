@@ -179,6 +179,14 @@ describe Tractor::Model::Base do
       
       Tractor::Model::Game.all.size.should == 1
     end
+    
+    it "puts the record in the dirty set to be persisted to the databse the next time it polls" do
+      Tractor::Model::Game.all.size.should == 0
+      game = Tractor::Model::Game.new({ :id => '1', :board => "small" })
+      game.save
+      
+      Tractor.redis.smembers("Tractor::Model::Dirty:all").should include("Tractor::Model::Game:1")
+    end
   end
     
   describe ".all" do

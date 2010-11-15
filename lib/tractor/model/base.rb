@@ -1,7 +1,6 @@
 require 'base64'
 
 module Tractor
-  
   class MissingIdError < StandardError; end
   class DuplicateKeyError < StandardError; end
   class MissingIndexError < StandardError; end
@@ -77,7 +76,14 @@ module Tractor
   end
   
   module Model
+    module Dirty
+      def mark
+        Tractor.redis.sadd "Tractor::Model::Dirty:all", "#{self.class}:#{id}"
+      end
+    end
+    
     class Base
+      include Dirty
       def initialize(attributes={})
         @attribute_store = {}
         @association_store = {}
@@ -93,6 +99,7 @@ module Tractor
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         add_to_associations
+        mark
         
         return self
       end
