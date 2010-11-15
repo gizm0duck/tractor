@@ -77,8 +77,26 @@ module Tractor
   
   module Model
     module Dirty
+      def self.key
+        "Tractor::Model::Dirty:all"
+      end
+      
       def mark
-        Tractor.redis.sadd "Tractor::Model::Dirty:all", "#{self.class},#{id}"
+        Tractor.redis.sadd Dirty.key, "#{self.class},#{id}"
+      end
+      
+      def self.all
+        Tractor.redis.smembers(Dirty.key).each do |k|
+          klass, id = k.split(',')
+          data = {:id => id, :klass => klass, :data => eval(klass).find_by_id(id).send(:attribute_store)}
+          begin
+            yield data
+            Tractor.redis.srem(Dirty.key, k)
+          rescue Exception => e
+            # Something went wrong, this should be handled on the callers end, but this prevents us from 
+            # removing the dirty record from our list while continuing to process other dirty items.
+          end
+        end
       end
     end
     
@@ -99,6 +117,7 @@ module Tractor
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         add_to_associations
+
         mark
         
         return self
