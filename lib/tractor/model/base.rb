@@ -39,7 +39,7 @@ module Tractor
     end
     
     def count
-      ids.size
+      Tractor.redis.scard(key)
     end
     
     def all
