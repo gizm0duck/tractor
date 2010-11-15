@@ -78,7 +78,7 @@ module Tractor
   module Model
     module Dirty
       def mark
-        Tractor.redis.sadd "Tractor::Model::Dirty:all", "#{self.class}:#{id}"
+        Tractor.redis.sadd "Tractor::Model::Dirty:all", "#{self.class},#{id}"
       end
     end
     

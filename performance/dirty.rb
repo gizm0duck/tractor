@@ -22,14 +22,13 @@ class Company < Tractor::Model::Base
   attribute :name
 end
 
-
-100.times do |i|
+10.times do |i|
   Company.create(:id => i+1, :name => Faker::Company.name)
 end
 
 puts "Companies created successfully"
 
-10000.times do |i|
+10.times do |i|
   Person.create(
     :id => i+1,
     :first_name => Faker::Name.first_name,
@@ -38,9 +37,23 @@ puts "Companies created successfully"
     :company_id => rand(Company.count)+1)
 end
 
-Company.all.each do |company|
-  t1 = Time.now
-  employees = company.people.all
-  t2 = Time.now
-  puts "Company #{company.id} has #{employees.size} employees and it took #{t2-t1} seconds to retrieve them all"
+puts "Employees created successfully"
+
+puts "# of dirty objects: #{Tractor.redis.scard("Tractor::Model::Dirty:all")}"
+
+20.times do
+  obj = Tractor.redis.spop("Tractor::Model::Dirty:all")
+  puts "Background syncinng dirty object: #{obj}"
 end
+
+puts "# of dirty objects: #{Tractor.redis.scard("Tractor::Model::Dirty:all")}"
+
+puts "updating company with id 1"
+
+c = Company.find_by_id(1)
+puts "Company name: #{c.name}"
+c.name = "Jelly Copter Inc."
+c.save
+puts "New Company name: #{c.name}"
+
+puts "# of dirty objects: #{Tractor.redis.scard("Tractor::Model::Dirty:all")}"

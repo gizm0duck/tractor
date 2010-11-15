@@ -185,7 +185,7 @@ describe Tractor::Model::Base do
       game = Tractor::Model::Game.new({ :id => '1', :board => "small" })
       game.save
       
-      Tractor.redis.smembers("Tractor::Model::Dirty:all").should include("Tractor::Model::Game:1")
+      Tractor.redis.smembers("Tractor::Model::Dirty:all").should include("Tractor::Model::Game,1")
     end
   end
     
