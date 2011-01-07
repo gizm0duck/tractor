@@ -255,6 +255,24 @@ describe Tractor do
       end
     end
     
+    describe "after_save" do
+      before do
+        class Callbackinator
+          after_save :duplicate_name
+          
+          def duplicate_name
+            self.name = self.name*2
+          end
+        end
+      end
+      
+      it "adds a method to be called after an instance is created" do
+        obj = Callbackinator.new(:name => "asdf", :id => 1)
+        obj.save
+        obj.name.should == "asdfasdf"
+      end
+    end
+    
     describe "after_destroy" do
       before do
         class Callbackinator

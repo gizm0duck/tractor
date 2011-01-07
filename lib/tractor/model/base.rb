@@ -117,8 +117,8 @@ module Tractor
         Tractor.redis.sadd "#{self.class}:all", self.id
         add_to_indices
         add_to_associations
-
         mark
+        self.class.run_callbacks(:after_save, self)
         
         return self
       end
@@ -182,6 +182,10 @@ module Tractor
         
         def after_destroy(name)
           callbacks[:after_destroy] << name
+        end
+        
+        def after_save(name)
+          callbacks[:after_save] << name
         end
         
         def run_callbacks(type, obj)
