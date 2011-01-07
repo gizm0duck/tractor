@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{tractor}
-  s.version = "0.4.9"
+  s.version = "0.5.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Shane Wolf"]
-  s.date = %q{2011-01-06}
+  s.date = %q{2011-01-07}
   s.description = %q{Very simple object mappings for ruby objects}
   s.email = %q{shanewolf@gmail.com}
   s.extra_rdoc_files = [
@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
     "lib/tractor.rb",
     "lib/tractor/model/base.rb",
     "lib/tractor/model/mapper.rb",
+    "performance/dirty.rb",
     "performance/test.rb",
     "spec/model/base_spec.rb",
     "spec/model/mapper_spec.rb",
