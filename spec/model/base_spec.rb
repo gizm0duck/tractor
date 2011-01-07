@@ -236,8 +236,45 @@ describe Tractor do
         Sammich.count.should == 2
       end
     end
+    
+    describe "after_create" do
+      before do
+        class Callbackinator
+          after_create :reverse_name
+          
+          def reverse_name
+            self.name = self.name.reverse
+            self.save
+          end
+        end
+      end
+      
+      it "adds a method to be called after an instance is created" do
+        obj = Callbackinator.create(:name => "asdf", :id => 1)
+        obj.name.should == "fdsa"
+      end
+    end
+    
+    describe "after_destroy" do
+      before do
+        class Callbackinator
+          after_destroy :put_something_in_redis
+          
+          def put_something_in_redis
+            Tractor.redis["something_in_redis"] = "thanks!"
+          end
+        end
+      end
+      
+      it "adds a method to be called after an instance is destroyed" do
+        obj = Callbackinator.create(:name => "asdf", :id => 1)
+        Tractor.redis["something_in_redis"].should be_nil
+        obj.destroy
+        Tractor.redis["something_in_redis"].should == "thanks!"
+      end
+    end
   
-    describe "#create" do
+    describe ".create" do
       it "allows you to specify which attributes should be unique"
 
       it "raises exception if the id exists" do

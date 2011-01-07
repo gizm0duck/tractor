@@ -13,6 +13,11 @@ Spec::Runner.configure do |config|
   end
 end
 
+class Callbackinator < Tractor::Model::Base
+  attribute :id
+  attribute :name
+end
+
 class Sammich < Tractor::Model::Base
   attribute :id
   attribute :product

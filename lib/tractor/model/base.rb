@@ -128,6 +128,7 @@ module Tractor
         remove_from_associations
         Tractor.redis.srem("#{self.class}:all", self.id)
         Tractor.redis.del "#{self.class}:#{self.id}"
+        self.class.run_callbacks(:after_destroy, self)
       end
       
       def update(attributes = {})
@@ -173,12 +174,27 @@ module Tractor
       end
       
       class << self
-        attr_reader :attributes, :associations, :indices
+        attr_reader :attributes, :associations, :indices, :callbacks
+        
+        def after_create(name)
+          callbacks[:after_create] << name
+        end
+        
+        def after_destroy(name)
+          callbacks[:after_destroy] << name
+        end
+        
+        def run_callbacks(type, obj)
+          callbacks[type].each do |cb|
+            obj.send(cb)
+          end
+        end
         
         def create(attributes={})
           raise DuplicateKeyError, "Duplicate value for #{self} 'id'" if Tractor.redis.sismember("#{self}:all", attributes[:id])
           m = new(attributes)
           m.save
+          run_callbacks(:after_create, m)
           m
         end
         
@@ -284,6 +300,10 @@ module Tractor
         
         def indices
           @indices ||= []
+        end
+        
+        def callbacks
+          @callbacks ||= Hash.new {|h, k| h[k] = [] }
         end
       end
       
